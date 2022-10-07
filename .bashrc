@@ -89,21 +89,22 @@ fi
 ## not be appropriate for this server, try to be intelligent about what we add
 ##
 MANPATH=/usr/local/man
-[ -d /usr/share/man ]            && MANPATH=$MANPATH:/usr/share/man
-[ -d /usr/local/share/man ]      && MANPATH=$MANPATH:/usr/local/share/man
-[ -d /usr/man ]                  && MANPATH=$MANPATH:/usr/man
-[ -d /usr/krb5/man ]             && MANPATH=$MANPATH:/usr/krb5/man
-[ -d /usr/kerberos/man ]         && MANPATH=$MANPATH:/usr/kerberos/man
-[ -d /usr/local/ssl/man ]        && MANPATH=$MANPATH:/usr/local/ssl/man
-[ -d /usr/java/jre1.5.0_02/man ] && MANPATH=$MANPATH:/usr/java/jre1.5.0_02/man
-[ -d /usr/java1.2/man ]          && MANPATH=$MANPATH:/usr/java1.2/man
-[ -d /usr/X11R6/man ]            && MANPATH=$MANPATH:/usr/X11R6/man
-[ -d /usr/local/apache/man ]     && MANPATH=$MANPATH:/usr/local/apache/man
-[ -d /usr/local/mysql/man ]      && MANPATH=$MANPATH:/usr/local/mysql/man
-[ -d /usr/perl5/man ]            && MANPATH=$MANPATH:/usr/perl5/man
-[ -d /usr/local/perl/man ]       && MANPATH=$MANPATH:/usr/local/perl/man
-[ -d /usr/local/perl5.8.0/man ]  && MANPATH=$MANPATH:/usr/local/perl5.8.0/man
-[ -d /usr/openwin/man ]          && MANPATH=$MANPATH:/usr/openwin/man
+MANPD=/usr/share/man              && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/local/share/man        && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/man                    && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/krb5/man               && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/kerberos/man           && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/local/ssl/man          && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/java/jre1.5.0_02/man   && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/java1.2/man            && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/X11R6/man              && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/local/apache/man       && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/local/mysql/man        && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/perl5/man              && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/local/perl/man         && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/local/perl5.8.0/man    && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+MANPD=/usr/openwin/man            && [ -d $MANPD ] && MANPATH=$MANPATH:$MANPD
+
 
 
 ##
