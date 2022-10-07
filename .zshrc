@@ -411,13 +411,15 @@ splay() { for i in "${@}"; do ffplay -nodisp -autoexit -loglevel quiet "${i}"; d
 ## 
 ## Mac Apps
 ## 
-macvim() { for i in "${@}"; do 
+macvim() { for i in "${@}"; do
 	[[ -f "${i}" ]] && open -a MacVim "${i}" || \
-		(echo -n "File \"${i}\" does not exist. Create? [yN] " \
-		&& read reply && [[ "$reply" =~ [yY] ]] \
-		&& touch "${i}"  && open -a MacVim "${i}") || :
-	done; 
+		{ { echo -n "File \"${i}\" does not exist. Create? [yN] " && \
+			read reply && [[ "$reply" =~ [yY] ]]; } && \
+			{ touch "${i}" && open -a MacVim "${i}"; } || \
+				echo "No file found to edit." ; }
+	done;
 }
+
 macvim1() { open -a MacVim "${@}"; }
 xc() { open -a Xcode "${@}"; }
 vs() { open -a "Visual Studio" "${@}"; }
