@@ -1,12 +1,12 @@
 #
-# .zshrc, startup file for zsh
+# .zshrc, startup file for zsh; .bashrc, startup file for bash
 # Author: Brian Snook
 # Date:   2008-03-28
 # Update: 2008-04-23 (fixed bug with multi-line commands in some awks)
 # Update: 2008-04-23 (modified so all lines fit in 80-char terminal)
 # Update: 2008-05-14 (updated name terminal (nt) default behaviour)
 # Update: 2008-05-23 (added findbin)
-# Update: 2022-10-07 (cleanup of old acct refs; removed email address)
+# Update: 2022-10-07 (removed old accts/email; standardized zsh/bash)
 # 
 
 # Example shell startup provided to get started
@@ -18,7 +18,11 @@
 ##
 ## Define the startup file (this file) for use later
 ##
-SHELL_STARTUP=.zshrc
+if [[ "$0" =~ "zsh" ]]; then
+	SHELL_STARTUP=".zshrc"
+elif [[ "$0" =~ "bash" ]]; then
+	SHELL_STARTUP=".bashrc"
+fi
 
 echo "INFO: READING ${SHELL_STARTUP}"
 
@@ -126,7 +130,8 @@ MANPATH=/usr/local/man
 ##
 ## Set your current prompt
 ##
-PROMPT="%n@%m:%~%# "
+[[ $0 =~ "zsh" ]]	&& PROMPT="%n@%m:%~%# "	&& export PROMPT
+[[ $0 =~ "bash" ]]	&& PS1="\u@\h:\W\$ "	&& export PS1
 
 
 ##
@@ -139,14 +144,14 @@ PROMPT="%n@%m:%~%# "
 if [ "x${USER}" = "x" ]; then USER=`id | cut -d \) -f1 | cut -d \( -f2`; fi
 
 
-export PATH MANPATH PROMPT USER SHELL_STARTUP
+export PATH MANPATH PROMPT USER SHELL_STARTUP PS1
 
 
 ##
 ## SSH-agent
 ##
 if [ -e $HOME/.agent ]; then source $HOME/.agent; fi
-mka() { ssh-agent -s > $HOME/.agent && source $HOME/.agent && ssh-add }
+mka() { ssh-agent -s > $HOME/.agent && source $HOME/.agent && ssh-add; }
 
 
 ##
@@ -202,10 +207,6 @@ gox() {
   disown
   (sleep 5 && exit)
 }
-
-## 
-goweb() { source ${HOME}/.zshrc.more.d/.zshrc.cfg-webcom }
-goweb
 
 ## Find Awk (or Nawk or Gawk)
 ##
@@ -424,48 +425,52 @@ macvim1() { open -a MacVim "${@}"; }
 xc() { open -a Xcode "${@}"; }
 vs() { open -a "Visual Studio" "${@}"; }
 
-gojup() { cd ~/Documents/GitHub/Pierian-Data-Complete-Python-3-Bootcamp && ( jupyter-notebook &; jupyter-lab &; ) }
+gojup() { cd ~/Documents/GitHub/Pierian-Data-Complete-Python-3-Bootcamp && { jupyter-notebook &  jupyter-lab & } }
 
 ##
 ## Zsh Options
 ##
-HISTFILE="$HOME/.zsh_history"
-HISTSIZE=4096
-#TMOUT=36000
-TMOUT=0
+if [[ $0 =~ "zsh" ]]; then
+	HISTFILE="$HOME/.zsh_history"
+	LOGCHECK=10
+	WATCHFMT="%B%n%b has %a from %m"
+	watch=(all)
+	NULLCMD=cat
+	READNULLCMD=less
+fi
 
-LOGCHECK=10
-WATCHFMT="%B%n%b has %a from %m"
-watch=(all)
-
+[[ $0 =~ "bash" ]] && HISTFILE="$HOME/.bash_history"
 #EDITOR=emacs
 EDITOR=vi
-NULLCMD=cat
-READNULLCMD=less
+HISTSIZE=4096
+TMOUT=0
 
 # emacs key bindings with bindkey (use arrows for command history)(man zshzle)
-bindkey -e                              # emacs key bindings
+[[ $0 =~ "zsh" ]] && bindkey -e				# emacs key bindings in zsh
+[[ $0 =~ "bash" ]] && bind -m emacs			# emacs key bindings in bash
 
-setopt ALLEXPORT
-setopt APPEND_HISTORY
-setopt AUTO_CD
-setopt AUTO_LIST
-unsetopt AUTO_MENU
-setopt AUTO_PARAM_SLASH
-setopt AUTO_PUSHD
-setopt BANG_HIST
-setopt BRACE_CCL
-setopt CDABLE_VARS
-setopt CLOBBER
-setopt CORRECT
-setopt CORRECT_ALL
-setopt EXTENDED_HISTORY
-setopt GLOB_DOTS
-setopt HIST_IGNORE_DUPS
-setopt LIST_TYPES
-setopt LOGIN
-setopt NOBEEP
-setopt NOTIFY
+if [[ "$0" =~ "zsh" ]]; then
+	setopt ALLEXPORT
+	setopt APPEND_HISTORY
+	setopt AUTO_CD
+	setopt AUTO_LIST
+	unsetopt AUTO_MENU
+	setopt AUTO_PARAM_SLASH
+	setopt AUTO_PUSHD
+	setopt BANG_HIST
+	setopt BRACE_CCL
+	setopt CDABLE_VARS
+	setopt CLOBBER
+	setopt CORRECT
+	setopt CORRECT_ALL
+	setopt EXTENDED_HISTORY
+	setopt GLOB_DOTS
+	setopt HIST_IGNORE_DUPS
+	setopt LIST_TYPES
+	setopt LOGIN
+	setopt NOBEEP
+	setopt NOTIFY
+fi
 
 
 ##
@@ -479,7 +484,8 @@ setopt NOTIFY
 #drwxr-xr-x  94 root     bin         2048 Jan  5  2006 /usr/share/man
 
 ## 
-tuny() { ssh -o ServerAliveCountMax=60 -o ServerAliveInterval=90 -L 127.0.0.1:5901:10.0.0.22:5901 -p 22000 bsnook@10.0.0.22 }
+TUNYUSER="bsnook"
+tuny() { ssh -o ServerAliveCountMax=60 -o ServerAliveInterval=90 -L 127.0.0.1:5901:10.0.0.22:5901 -p 22000 ${TUNYUSER}@10.0.0.22; }
 
 ## AWS
 goar1() { export AWS_DEFAULT_REGION='us-east-1'; }
@@ -488,12 +494,15 @@ goap1() { export AWS_PROFILE='first'; }
 goap2() { export AWS_PROFILE='default'; }
 
 
+if [[ `uname -s` =~ "Darwin" ]]; then
+	PATH="/Users/${USER}/perl5/bin${PATH:+:${PATH}}"
+	PERL5LIB="/Users/${USER}/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"
+	PERL_LOCAL_LIB_ROOT="/Users/${USER}/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"
+	PERL_MB_OPT="--install_base \"/Users/${USER}/perl5\""
+	PERL_MM_OPT="INSTALL_BASE=/Users/${USER}/perl5"
+	export PATH PERL5LIB PERL_LOCAL_LIB_ROOT PERL_MB_OPT PERL_MM_OPT
+fi
 
-PATH="/Users/bmsnook/perl5/bin${PATH:+:${PATH}}"; export PATH;
-PERL5LIB="/Users/bmsnook/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
-PERL_LOCAL_LIB_ROOT="/Users/bmsnook/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
-PERL_MB_OPT="--install_base \"/Users/bmsnook/perl5\""; export PERL_MB_OPT;
-PERL_MM_OPT="INSTALL_BASE=/Users/bmsnook/perl5"; export PERL_MM_OPT;
-
-# Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
+# Add RVM to PATH for Ruby scripting. Ensure this is the last PATH variable change.
 export PATH="$PATH:$HOME/.rvm/bin"
+
