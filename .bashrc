@@ -315,10 +315,10 @@ export MANPATH
 ##
 ## [[ $0 =~ "zsh" ]]       && PROMPT="%n@%m:%~%# " && export PROMPT
 ## [[ $0 =~ "bash" ]]      && PS1="\u@\h:\W\$ "    && export PS1
-## 
+##
 ## NOTE: Set a Fancy Prompt or Set a Simple Prompt when needed
 ##   (i.e., before using "script" to capture output to avoid control chars)
-## 
+##
 if [[ $0 =~ "zsh" ]]; then
     # Basic PROMPT
     #PROMPT="%n@%m:%~%# " && export PROMPT
@@ -1012,7 +1012,7 @@ compdate ()
 looppre() { 
     PREFIX="${1}";
     while true; 
-        do read x && echo -n "${PREFIX}__${x}__" ; 
+        do read x && echo -n "${PREFIX}__$(mlc ${x//[\"\']/})__" ; 
     done; 
 }
 mlc() { 
@@ -1026,16 +1026,11 @@ mlc() {
             printf tolower($0)
         }' | tee $(tty) | pbcopy && echo;
 }
-lmlc() { while true; do read answer; mlc "${answer}"; done; }
-lmlc2() { while true; do read answer; mlc $(echo "${answer}" | sed -e 's/"//g'); done; }
-mlb()  { mlc "${@}__" ; }
-lmlb() { while true; do read answer; mlc "${answer}__" ; done; }
-lmlb2() { while true; do read answer; mlc $(echo "${answer}__" | sed -e 's/"//g'); done; }
-mle()  { mlc "__${@}" ; }
-lmle() { while true; do read answer; mlc "__${answer}" ; done; }
-lmle2() { while true; do read answer; mlc $(echo "__${answer}" | sed -e 's/"//g'); done; }
-ph()   { mlc ph__"${@}"__ ; }
-yp()   { mlc yp__"${@}"__ ; }
+lmlc() { while true; do read answer; mlc "${answer//[\"\']/}"; done; }
+mlb()  { mlc "${@//[\"\']/}__" ; }
+lmlb() { while true; do read answer; mlc "${answer//[\"\']/}__" ; done; }
+mle()  { mlc "__${@//[\"\']/}" ; }
+lmle() { while true; do read answer; mlc "__${answer//[\"\']/}" ; done; }
 ## sbs - strip backslashes from text (file or string)
 sbs() { 
     [[ -f "$1" ]] && sed -e 's/\\//g' "$1" || echo "$1" | sed -e 's/\\//g';
@@ -1291,6 +1286,7 @@ if [[ $0 =~ "bash" ]]; then
     [[ $PS1 && -n "${BASH_COMPLETION_PATH}" ]] && \
         . /usr/share/bash-completion/bash_completion
 fi
+## END Bash Options
 
 ## 
 ## Common Options
