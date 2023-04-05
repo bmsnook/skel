@@ -14,6 +14,8 @@
 # Update: 2022-12-13 (update: rewrote findawk; use it to set AWK variable)
 # Update: 2023-01-04 (add: m2l)
 # Update: 2023-02-21 (add: convdate, fgg, recol)
+# Update: 2023-03-15 (add: cdf, Google Chrome app functions for MacOS)
+# Update: 2023-03-16 (add: show function for MacOS)
 # 
 
 # Example shell startup provided to get started
@@ -126,12 +128,6 @@ EOF
 fi
 
 
-## 
-## Bash variable checks
-## 
-## https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash
-## https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash/16753536#16753536
-## 
 
 
 ## 
@@ -202,6 +198,7 @@ TPD=/usr/openwin/bin                            && pathadd "${TPD}"
 TPD=/usr/xpg4/bin                               && pathadd "${TPD}"
 TPD=/usr/dt/bin                                 && pathadd "${TPD}"
 TPD=/opt/google/chrome                          && pathadd "${TPD}"
+TPD="${E_HOME}/homebrew/bin"                    && pathadd "${TPD}"
 TPD=/Applications/Bluefish.app/Contents/MacOS   && pathadd "${TPD}"
 TPD=~/Library/Python/3.8/bin                    && pathadd "${TPD}"
 TPD=/usr/local/opt/qt@5/bin                     && pathadd "${TPD}"
@@ -216,9 +213,11 @@ TPD="${UALP}"/"Microsoft VS Code"/bin           && pathadd "${TPD}"
 TPD="${UALP}"/"Microsoft VS Code"               && pathadd "${TPD}"
 TPD="${HOME}/AppData/Local/GnuWin32/bin/gawk"   && pathadd "${TPD}"
 TPD="${WPF}"/Google/Chrome/Application          && pathadd "${TPD}"
+TPD="${HOME}/local/aws-cli"                     && pathadd "${TPD}"
+TPD="${HOME}/local/bin"                         && pathadd "${TPD}"
+TPD="${HOME}/local"                             && pathadd "${TPD}"
 TPD="${HOME}/.local/bin"                        && pathadd "${TPD}"
 TPD="${HOME}/bin"                               && pathadd "${TPD}"
-TPD="${HOME}/homebrew/bin"                      && pathadd "${TPD}"
 TPD="${E_HOME}/.local/bin"                      && pathadd "${TPD}"
 TPD="${E_HOME}/bin"                             && pathadd "${TPD}"
 TPD="${E_HOME}/scripts"                         && pathadd "${TPD}"
@@ -256,7 +255,7 @@ done
 ## 
 ## Only replace MANPATH if the replacement is at least as long as "/man"
 ## 
-[[ ${#NEWMANPATH} -ge 4 ]] && MANPATH="${NEWPATH}"
+[[ ${#NEWMANPATH} -ge 4 ]] && MANPATH="${NEWMANPATH}"
 ##
 ## MANPATH
 ##
@@ -270,22 +269,24 @@ done
 ## New way of doing it (with function that checks dir validity and uniqueness):
 ##   MANPD=/usr/local/man   && manpathadd "${MANPD}"
 ## 
-MANPD=/usr/local/man             && manpathadd "${MANPD}"
-MANPD=/usr/share/man             && manpathadd "${MANPD}"
-MANPD=/usr/local/share/man       && manpathadd "${MANPD}"
-MANPD=/usr/man                   && manpathadd "${MANPD}"
-MANPD=/usr/krb5/man              && manpathadd "${MANPD}"
-MANPD=/usr/kerberos/man          && manpathadd "${MANPD}"
-MANPD=/usr/local/ssl/man         && manpathadd "${MANPD}"
-MANPD=/usr/java/jre1.5.0_02/man  && manpathadd "${MANPD}"
-MANPD=/usr/java1.2/man           && manpathadd "${MANPD}"
-MANPD=/usr/X11R6/man             && manpathadd "${MANPD}"
-MANPD=/usr/local/apache/man      && manpathadd "${MANPD}"
-MANPD=/usr/local/mysql/man       && manpathadd "${MANPD}"
-MANPD=/usr/perl5/man             && manpathadd "${MANPD}"
-MANPD=/usr/local/perl/man        && manpathadd "${MANPD}"
-MANPD=/usr/local/perl5.8.0/man   && manpathadd "${MANPD}"
-MANPD=/usr/openwin/man           && manpathadd "${MANPD}"
+MANPD=/usr/local/man                   && manpathadd "${MANPD}"
+MANPD=/usr/share/man                   && manpathadd "${MANPD}"
+MANPD=/usr/local/share/man             && manpathadd "${MANPD}"
+MANPD=/usr/man                         && manpathadd "${MANPD}"
+MANPD=/usr/krb5/man                    && manpathadd "${MANPD}"
+MANPD=/usr/kerberos/man                && manpathadd "${MANPD}"
+MANPD=/usr/local/ssl/man               && manpathadd "${MANPD}"
+MANPD=/usr/java/jre1.5.0_02/man        && manpathadd "${MANPD}"
+MANPD=/usr/java1.2/man                 && manpathadd "${MANPD}"
+MANPD=/usr/X11R6/man                   && manpathadd "${MANPD}"
+MANPD=/usr/local/apache/man            && manpathadd "${MANPD}"
+MANPD=/usr/local/mysql/man             && manpathadd "${MANPD}"
+MANPD=/usr/perl5/man                   && manpathadd "${MANPD}"
+MANPD=/usr/local/perl/man              && manpathadd "${MANPD}"
+MANPD=/usr/local/perl5.8.0/man         && manpathadd "${MANPD}"
+MANPD=/usr/openwin/man                 && manpathadd "${MANPD}"
+MANPD=/opt/java/openjdk/man            && manpathadd "${MANPD}"
+MANPD="${E_HOME}/homebrew/manpages"    && manpathadd "${MANPD}"
 export MANPATH
 
 ##
@@ -312,23 +313,45 @@ export MANPATH
 ##
 ## Set your current prompt
 ##
-[[ $0 =~ "zsh" ]]       && PROMPT="%n@%m:%~%# " && export PROMPT;
-[[ $0 =~ "bash" ]]      && PS1="\u@\h:\W\$ "    && export PS1;
-
-## Another option for those who like fancy stuff
-#export PS1="\u@\h \[\033[32m\]\w\[\033[33m\]\$(parse_git_branch)\[\033[00m\]\$ "
-[[ $0 =~ "bash" ]] && \
-export PS1="\u@\h \[\033[32m\]\W\[\033[33m\]\$(parse_git_branch)\[\033[00m\]\$ "
-
+## [[ $0 =~ "zsh" ]]       && PROMPT="%n@%m:%~%# " && export PROMPT
+## [[ $0 =~ "bash" ]]      && PS1="\u@\h:\W\$ "    && export PS1
 ## 
-## Reset a Simple Bash Prompt or Fancy Bash Prompt when needed
+## NOTE: Set a Fancy Prompt or Set a Simple Prompt when needed
 ##   (i.e., before using "script" to capture output to avoid control chars)
 ## 
-sbp(){ PS1="\u@\h:\W\$ " && export PS1; }
-fbp(){ 
-    PS1="\u@\h \[\033[32m\]\W\[\033[33m\]\$(parse_git_branch)\[\033[00m\]\$ " &&\
-    export PS1; 
-}
+if [[ $0 =~ "zsh" ]]; then
+    # Basic PROMPT
+    #PROMPT="%n@%m:%~%# " && export PROMPT
+    # Set Simple Prompt
+    ssp() { 
+        PS1="%n@%m:%~%# "
+        export PS1
+    }
+    # Set Fancy Prompt
+    sfp() { 
+        setopt PROMPT_SUBST
+        PS1="%n@%m:%B\$(parse_git_toplevel)%b\$(parse_git_branch):%~%B%#%b "
+        export PS1
+    }
+fi
+if [[ $0 =~ "bash" ]]; then
+    #PS1="\u@\h:\W\$ "    && export PS1
+    # Set Simple Prompt
+    ssp() { 
+        PS1="\u@\h:\W\$ "
+        export PS1
+    }
+    # Set Fancy Prompt
+    sfp() { 
+        #PS1="\u@\h \[\033[32m\]\W\[\033[33m\]\$(parse_git_branch)\[\033[00m\]\$ "
+        PS1="\u@\h:\[\033[32m\]\W\[\033[33m\]\$(parse_git_branch)\[\033[00m\]\$ "
+        export PS1
+    }
+fi
+## Simple
+ssp
+## Fancy
+#sfp
 
 
 ## 
@@ -400,6 +423,7 @@ umask 022
 #alias cp='nocorrect cp'       # no spelling correction on cp
 #alias mkdir='nocorrect mkdir' # no spelling correction on mkdir
 #alias which='type -f'
+alias ll="ls -al"
 
 cacert=""
 winca="${HOME}/Documents/Keyz/Certs/Node_CA.pem"
@@ -840,6 +864,7 @@ nt() {
 ## 
 ## Git Stuff
 ## 
+alias gp='git pull'
 gdiff() { git log $1 | \
     ${AWK} -v FN="$1" '/commit/{cmd=sprintf("%s %s",$2,cmd);\
         count++;if(count>=2){exit}}
@@ -848,7 +873,17 @@ gdiff() { git log $1 | \
 }
 
 parse_git_branch() {
-    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/';
+    #git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+}
+parse_git_toplevel() {
+    #basename $(git rev-parse --show-toplevel 2> /dev/null) | sed '/[^$]/s/\(.*\)/\[\1\]::/'
+    GTL=$(git rev-parse --show-toplevel 2> /dev/null)
+    if [[ "x${GTL}" != "x" ]]; then
+        basename "${GTL}" | sed '/[^$]/s/\(.*\)/\[\1\]/'
+    else 
+        printf ""
+    fi
 }
 
 ##
@@ -952,11 +987,14 @@ cppfd() {
         echo `date "+__%Y-%m-%d"`
     fi;
 }
+
 ## 
 ## Stub for date comparison function
 ## 
 compdate ()
 {
+    DATED=$(date -d "1800 seconds" "+%Y%m%d_%H%M%S" > /dev/null 2>&1; echo $?)  
+    DATEV=$(date -v "+1800S" "+%Y%m%d_%H%M%S" > /dev/null 2>&1; echo $?)             
     if [[ $(date -d "${1}" +%s) -lt $(date -d "${2}" +%s) ]]; then
         echo "${1}  <  ${2}  (to the FUTURE)";
     else
@@ -976,12 +1014,6 @@ looppre() {
     while true; 
         do read x && echo -n "${PREFIX}__${x}__" ; 
     done; 
-}
-lblah() {
-	while true; do 
-		read it; 
-		mle $(echo "${it}" | sed -e 's/"//g'); 
-	done; 
 }
 mlc() { 
     echo "${@}" | sed -e 's/[$.]/_/g' -e 's/\\/_/g' -e "s/'//g" | \
@@ -1170,21 +1202,29 @@ recol() {
         line_matrix[NR][elem] = curr_line_array[elem]
     }
     for (i=1; i<=length(curr_line_array); i++) {
-      if (length(curr_line_array[i]) > col_max[i]) {
-        col_max[i] = length(curr_line_array[i])
+      if (length(curr_line_array[i]) > max_col_width[i]) {
+        max_col_width[i] = length(curr_line_array[i])
       }
     }
   }
   END {
     num_lines=length(line_matrix)
     for (line=1; line<=num_lines; line++) {
-      num_line_items = length(line_matrix[line])
-      printf("%-*s", col_max[1], line_matrix[line][1])
-      for (item=2; item<num_line_items; item++) {
-        if (line_matrix[line][item] ~ /^[+-]?[[:digit:]]+$/) {
-          printf("%*s%*s", NUM_PAD_SPACE, " " ,col_max[item], line_matrix[line][item])
+      num_line_cols = length(line_matrix[line])
+      printf("%-*s", max_col_width[1], line_matrix[line][1])
+      for (col=2; col<num_line_cols; col++) {
+        if (line_matrix[line][col] ~ /^[+-]?[[:digit:]]+$/) {
+          printf("%*s%*s", \
+            NUM_PAD_SPACE, \
+            " " , \
+            max_col_width[col], \
+            line_matrix[line][col])
         } else {
-          printf("%*s%-*s", NUM_PAD_SPACE, " " ,col_max[item], line_matrix[line][item])
+          printf("%*s%-*s", \
+            NUM_PAD_SPACE, \
+            " " , \
+            max_col_width[col], \
+            line_matrix[line][col])
         }
       }
       printf("\n")
@@ -1199,11 +1239,6 @@ splay() {
     for i in "${@}"; do ffplay -nodisp -autoexit -loglevel quiet "${i}"; done; 
 }
 
-
-# emacs key bindings with bindkey (use arrows for command history)(man zshzle)
-#[[ $0 =~ "zsh" ]] && bindkey -e                 # emacs key bindings in zsh
-#[[ $0 =~ "bash" ]] && bind -m emacs             # emacs key bindings in bash
-
 ##
 ## Zsh Options
 ##
@@ -1215,6 +1250,7 @@ if [[ $0 =~ "zsh" ]]; then
     watch=(all)
     NULLCMD=cat
     READNULLCMD=less
+    autoload -U compinit && compinit
     setopt ALLEXPORT
     setopt APPEND_HISTORY
     setopt AUTO_CD
@@ -1227,15 +1263,18 @@ if [[ $0 =~ "zsh" ]]; then
     setopt CDABLE_VARS
     setopt CLOBBER
     setopt CORRECT
-    setopt CORRECT_ALL
+#    setopt CORRECT_ALL
+    unsetopt CORRECT_ALL
     setopt EXTENDED_HISTORY
-    setopt GLOB_DOTS
+#    setopt GLOB_DOTS
+    unsetopt GLOB_DOTS
     setopt HIST_IGNORE_DUPS
     setopt LIST_TYPES
     setopt LOGIN
     setopt NOBEEP
     setopt NOTIFY
 fi
+## END Zsh Options
 
 ## 
 ## Bash Options
@@ -1272,12 +1311,68 @@ TMOUT=0
 # lrwxrwxrwx   1 root     root          11 May 19  2005 /usr/man -> ./share/man
 # drwxr-xr-x  94 root     bin         2048 Jan  5  2006 /usr/share/man
 
+## 
+## Bash variable checks
+## 
+## https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash
+## https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash/16753536#16753536
+## 
 
+## 
 ## AWS
+## 
 goar1() { export AWS_DEFAULT_REGION='us-east-1'; }
 goar2() { export AWS_DEFAULT_REGION='us-east-2'; }
 goap1() { export AWS_PROFILE='first'; }
 goap2() { export AWS_PROFILE='default'; }
+
+## 
+## Assume Account Role - assume AWS account roles
+##   Original script by D. Shulz; modified to avoid a temp file 
+##   for KEY/TOKEN values for security while sharing dotfile 
+##   and avoiding session conflicts
+## 
+##   Requires a file with both EXTERNAL_ID and ARN_ROLE defined
+##     Assume a format like 
+##       % cat ~/.aws/externalid_role
+##       EXTERNAL_ID="abcdefgh"
+##       ARN_ROLE="delegate-admin-such-a-nice-instance-profile"
+##     but accommodate if the user already specified an export command 
+##     in anticipation of directly sourcing the file.
+## 
+aar () {
+    #set +x
+    export account_id=$1
+    ID_ROLE_FILE="${E_HOME}/.aws/externalid_role"
+    if [[ -f "${ID_ROLE_FILE}" ]]; then 
+        eval $( sed -e '/^export/!s/^/export /' "${ID_ROLE_FILE}" )
+    fi
+    export DURATION=1800                # desired duration of session in seconds
+    export TARGET_ARN="arn:aws:iam::${account_id}:role/${ARN_ROLE}"
+    unset_cmd="unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN"
+    # Print the current account/role if there is a valid session
+    echo "Current role: $(aws sts get-caller-identity --query Arn --output text)"
+    echo $unset_cmd
+    eval $unset_cmd
+    if [[ $# -gt 0 ]]; then
+        #SESSION="temp"
+        SESSION="expiry_$(date -d "$DURATION seconds" "+%Y%m%d_%H%M%S")"
+        eval $( aws sts assume-role --duration-seconds $DURATION \
+            --role-arn $TARGET_ARN \
+            --role-session-name $SESSION \
+            --external-id "${EXTERNAL_ID}" | \
+          awk '
+            /AccessKeyId/    {gsub("[\",]","");printf "export AWS_ACCESS_KEY_ID=%s\n",$2}
+            /SecretAccessKey/{gsub("[\",]","");printf "export AWS_SECRET_ACCESS_KEY=%s\n",$2}
+            /SessionToken/   {gsub("[\",]","");printf "export AWS_SESSION_TOKEN=%s\n",$2}
+            /Expiration/     {gsub("[\",]","");printf "export AWS_SESSION_EXPIRY=%s\n",$2}
+          ' )
+    fi
+    echo "Assumed role: $(aws sts get-caller-identity --query Arn --output text)"
+    echo "Current time: $(date)"
+    echo "Expiry  time: $(date -d "$AWS_SESSION_EXPIRY")"
+    unset account_id DURATION TARGET_ARN;
+}
 
 
 ## 
@@ -1317,6 +1412,11 @@ fi
 ## 
 if [[ `uname -s` =~ "Darwin" ]]; then
     ## 
+    ## Variables
+    ## 
+    export CDPATH=".:${HOME}:${HOME}/Documents"
+
+    ## 
     ## Text Processing
     ## 
     looppre() { 
@@ -1329,6 +1429,22 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     ## 
     ## Functions to open Mac Apps
     ## 
+
+    ## MacVim
+    ## 
+    ## NOTE: Location/Order of configuration files MacVim reads
+    ## :version reveals that MacVim loads configuration files in this order
+    ##    system vimrc file: "$VIM/vimrc"
+    ##      user vimrc file: "$HOME/.vimrc"
+    ##  2nd user vimrc file: "~/.vim/vimrc"
+    ##       user exrc file: "$HOME/.exrc"
+    ##   system gvimrc file: "$VIM/gvimrc"
+    ##     user gvimrc file: "$HOME/.gvimrc"
+    ## 2nd user gvimrc file: "~/.vim/gvimrc"
+    ##        defaults file: "$VIMRUNTIME/defaults.vim"
+    ##     system menu file: "$VIMRUNTIME/menu.vim"
+    ##   fall-back for $VIM: "/Applications/MacVim.app/Contents/Resources/vim"
+
     macvim() { for i in "${@}"; do
         [[ -f "${i}" ]] && open -a MacVim "${i}" || \
             { { echo -n "File \"${i}\" does not exist. Create? [yN] " && \
@@ -1339,7 +1455,13 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     }
 
     macvim1() { open -a MacVim "${@}"; }
+
+    ## Xcode
+    ## 
     xc() { open -a Xcode "${@}"; }
+
+    ## Visual Studio
+    ## 
     [[ -e "/Applications/Visual Studio.app" ]] && \
         vs() { open -a "Visual Studio" "${@}"; }
     [[ -e "/Applications/Visual Studio Code.app" ]] && \
@@ -1349,6 +1471,98 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     [[ -f "${LYNX}" ]] && alias lynx="${LYNX}"
 
     [[ "${UN}" =~ "^ATL" ]] && BREW_HOME="${HOME}"/homebrew
+
+    ## Google Chrome
+    ## 
+    chrome() { open -a "Google Chrome"; }
+    ## 
+    ## Define Functions to open Google Apps, if installed
+    ## 
+    ##   Should pass output like the following to 'eval':
+    ##     docs()     { open -a "Docs"; }; 
+    ##     gmail()    { open -a "Gmail"; }; 
+    ##     calendar() { open -a "Google Calendar"; }; 
+    ##     chat()     { open -a "Google Chat"; }; 
+    ##     drive()    { open -a "Google Drive"; }; 
+    ##     meet()     { open -a "Google Meet"; }; 
+    ##     sheets()   { open -a "Sheets"; }; 
+    ##     
+    CHROME_APP_PATH="$(ls -1d "${E_HOME}/Applications/Chrome Apps.localized" 2>/dev/null)"
+    if [[ "x${CHROME_APP_PATH}" != "x" ]]; then 
+        eval $( ls -1 "${CHROME_APP_PATH}/" | \
+            "${AWK}" -F/ '/app$/ {
+                gsub(".app","");
+                numparts=split($NF,appname," ");
+                printf "%-10s { open -a \"%s\"; }; \n",tolower(appname[numparts])"()",$NF
+            }' 
+        )
+    fi
+
+    ## 
+    ## cdf - Change Directory to Finder window path
+    ##       Credit: https://superuser.com/a/1044651
+    ## 
+    cdf() {
+        target=`osascript -e \
+            'tell application "Finder" to \
+                if (count of Finder windows) > 0 then 
+                    get POSIX path of (target of front Finder window as text)
+                end if'
+        `
+        if [ "x${target}" != "x" ]; then
+            cd "${target}" && pwd || echo "Could not cd to \"${target}\"" >&2
+        else
+            echo 'No Finder window found' >&2
+        fi
+    }
+
+    ## 
+    ## show - Reveal (select, show) file(s) in the Finder
+    ## 
+    ##   NOTE: a single file may be revealed/selected with:
+    ##       open -R "/path/to/some directory/and file.ext"
+    ##   USAGE: 
+    ##       To modify whether this function brings the Finder to foreground 
+    ##       after highlighting files, add/uncomment/comment/remove the line 
+    ##       "activate" after the line "reveal FILE_array"
+    ## 
+    show() {
+        if [[ $# -ge 1 ]]; then
+            FILE_ARRAY=()
+            while [[ $# -gt 1 ]]; do
+                CURR_FULL_PATH="$(readlink -f "${1}")"
+                FILE_ARRAY+=("${CURR_FULL_PATH}")
+                shift
+            done
+            CURR_FULL_PATH="$(readlink -f "${1}")"
+            FILE_ARRAY+=("${CURR_FULL_PATH}")
+
+            printf "%s " "${FILE_ARRAY[@]// /\ }" | xargs osascript -e 'on run argv
+                set FILE_array to {}
+                set files_found_count to 0
+                repeat with i from 1 to length of argv
+                    set curr_psx_file to item i of argv
+                    set curr_hfs_file to POSIX file curr_psx_file
+                    try
+                        curr_hfs_file as alias
+                        set the end of FILE_array to curr_hfs_file
+                        set files_found_count to files_found_count + 1
+                    on error
+                    end try
+                end repeat
+                try
+                    tell application "Finder"
+                        reveal FILE_array
+            #           activate
+                    end tell
+                on error
+                    display dialog "Could not reveal files:\n" & FILE_array as string
+                end try
+                return "Found " & files_found_count & " files to display."
+            end run'
+        fi
+    }
+
 
     ## 
     ## App Support and Library Environment Setup
