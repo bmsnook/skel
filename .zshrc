@@ -1322,6 +1322,30 @@ goar2() { export AWS_DEFAULT_REGION='us-east-2'; }
 goap1() { export AWS_PROFILE='first'; }
 goap2() { export AWS_PROFILE='default'; }
 
+aws_env() {
+    if [[ $# -eq 1 ]]; then
+        AWS_PROFILE="${1}"
+    else
+        AWS_PROFILE="default"
+    fi
+    export AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id --profile ${AWS_PROFILE});
+    export AWS_SECRET_ACCESS_KEY=$(aws configure get aws_secret_access_key --profile ${AWS_PROFILE});
+    export AWS_DEFAULT_REGION=$(aws configure get region --profile ${AWS_PROFILE});
+    echo "${AWS_PROFILE} environment variables exported";
+}
+
+aws_env_tf() {
+    if [[ $# -eq 1 ]]; then
+        AWS_PROFILE="${1}"
+    else
+        AWS_PROFILE="default"
+    fi
+    export TF_VAR_aws_access_key=$(aws configure get aws_access_key_id --profile ${AWS_PROFILE});
+    export TF_VAR_aws_secret_key=$(aws configure get aws_secret_access_key --profile ${AWS_PROFILE});
+    export TF_VAR_region=$(aws configure get region --profile ${AWS_PROFILE});
+    echo "${AWS_PROFILE} environment variables exported to terraform";
+}
+
 ## 
 ## Assume Account Role - assume AWS account roles
 ##   Original script by D. Shulz; modified to avoid a temp file 
@@ -1620,7 +1644,7 @@ if [[ `uname -s` =~ "Darwin" ]]; then
 fi      ## /MacOS
 
 ## Import settings or functions that may contain proprietary references  
-## that can't be easily obscured with regex or other references from 
+## that cannot be easily obscured with regex or other references from 
 ## a separate configuration file to allow the base shell resource file 
 ## to be shared between a variety of systems.
 ## 
