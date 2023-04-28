@@ -16,6 +16,7 @@
 # Update: 2023-02-21 (add: convdate, fgg, recol)
 # Update: 2023-03-15 (add: cdf, Google Chrome app functions for MacOS)
 # Update: 2023-03-16 (add: show function for MacOS)
+# Update: 2023-04-27 (add: jenv configurations)
 # 
 
 # Example shell startup provided to get started
@@ -174,11 +175,14 @@ done
 ## 
 TPD=/usr/local/sbin                             && pathadd "${TPD}"
 TPD=/usr/local/bin                              && pathadd "${TPD}"
+TPD="${HOME}/.jenv/bin"                         && pathadd "${TPD}"
+TPD="${HOME}/.jenv/shims"                       && pathadd "${TPD}"
+TPD="${E_HOME}/homebrew/bin"                    && pathadd "${TPD}"
 TPD=/usr/sbin                                   && pathadd "${TPD}"
 TPD=/usr/bin                                    && pathadd "${TPD}"
 TPD=/sbin                                       && pathadd "${TPD}"
 TPD=/bin                                        && pathadd "${TPD}"
-TPD=~/anaconda3/bin                             && pathadd "${TPD}"
+TPD="${HOME}"/anaconda3/bin                     && pathadd "${TPD}"
 TPD=/usr/ucb                                    && pathadd "${TPD}"
 TPD=/usr/ccs/bin                                && pathadd "${TPD}"
 TPD=/usr/local/ssl/bin                          && pathadd "${TPD}"
@@ -186,8 +190,8 @@ TPD=/usr/krb5/bin                               && pathadd "${TPD}"
 TPD=/usr/krb5/sbin                              && pathadd "${TPD}"
 TPD=/usr/kerberos/sbin                          && pathadd "${TPD}"
 TPD=/usr/kerberos/bin                           && pathadd "${TPD}"
-TPD=/usr/java/jre1.5.0_02/bin                   && pathadd "${TPD}"
-TPD=/usr/java1.2/bin                            && pathadd "${TPD}"
+#TPD=/usr/java/jre1.5.0_02/bin                   && pathadd "${TPD}"
+#TPD=/usr/java1.2/bin                            && pathadd "${TPD}"
 TPD=/usr/perl5/bin                              && pathadd "${TPD}"
 TPD=/usr/X11R6/bin                              && pathadd "${TPD}"
 TPD=/etc/X11                                    && pathadd "${TPD}"
@@ -198,13 +202,12 @@ TPD=/usr/openwin/bin                            && pathadd "${TPD}"
 TPD=/usr/xpg4/bin                               && pathadd "${TPD}"
 TPD=/usr/dt/bin                                 && pathadd "${TPD}"
 TPD=/opt/google/chrome                          && pathadd "${TPD}"
-TPD="${E_HOME}/homebrew/bin"                    && pathadd "${TPD}"
 TPD=/Applications/Bluefish.app/Contents/MacOS   && pathadd "${TPD}"
-TPD=~/Library/Python/3.8/bin                    && pathadd "${TPD}"
+TPD="${HOME}"/Library/Python/3.8/bin            && pathadd "${TPD}"
 TPD=/usr/local/opt/qt@5/bin                     && pathadd "${TPD}"
 TPD=/usr/local/Cellar/qt@5/5.15.3/bin           && pathadd "${TPD}"
 TPD=/usr/local/go/bin                           && pathadd "${TPD}"
-TPD="${JAVA_HOME}/bin"                          && pathadd "${TPD}"
+#TPD="${JAVA_HOME}/bin"                          && pathadd "${TPD}"
 TPD="/c/OpenSSH-Win64"                          && pathadd "${TPD}"
 TPD="${CWINDOWS}"                               && pathadd "${TPD}"
 TPD="${WPF}"/Git/bin                            && pathadd "${TPD}"
@@ -385,7 +388,7 @@ mka() {
 ## Local environment and SSH connection functions
 ## 
 gojup() { 
-    cd ~/Documents/GitHub/Pierian-Data-Complete-Python-3-Bootcamp \
+    cd "${HOME}"/Documents/GitHub/Pierian-Data-Complete-Python-3-Bootcamp \
         && { jupyter-notebook &  jupyter-lab & } ;
 }
 gok8() { 
@@ -1237,6 +1240,81 @@ splay() {
 ##
 ## Zsh Options
 ##
+## View or change current options by with either "set -o" or "set +o"
+## 
+## Enable an option
+##     setopt OPTION
+##     set -o OPTION
+## 
+## Disable an option
+##     unsetopt OPTION
+##     set +o OPTION
+## 
+## See all enabled options
+##     setopt
+## See all disabled options
+##     unsetopt
+## 
+## See all options and their current settings
+##   (formatted as a list of "on" or "off" values)
+##     set -o
+## See all options and their current settings
+##   (formatted as commands to replicate via script)
+##     set +o
+## 
+## Example: view a subset of values:
+##     % setopt | awk '/correct/||(/glob/&&/ext|null|dot/&&!/csh/)'
+##     correct
+##     extendedglob
+##     globdots
+##     
+##     % unsetopt | awk '/correct/||(/glob/&&/ext|null|dot/&&!/csh/)'
+##     correctall
+##     nullglob
+##     
+##     % set -o | awk '/correct/||(/glob/&&/ext|null|dot/&&!/csh/)'
+##     correct               on
+##     correctall            off
+##     extendedglob          on
+##     globdots              on
+##     nullglob              off
+##     
+##     % set +o | awk '/correct/||(/glob/&&/ext|null|dot/&&!/csh/)'
+##     set -o correct
+##     set +o correctall
+##     set -o extendedglob
+##     set -o globdots
+##     set +o nullglob
+##     
+## NOTE: Zsh can use Bash names (as "Option Aliases") when modifying options
+##   See:
+##     https://linux.die.net/man/1/zshoptions
+##     https://zsh.sourceforge.io/Doc/Release/Options.html
+## 
+##   For example:
+##     % set -o | awk '/glob/&&/dot/'
+##     globdots              on
+##     % unsetopt DOT_GLOB
+##     % set -o | awk '/glob/&&/dot/'
+##     globdots              off
+##     
+## NOTE: Options are commonly capitalized with underscores for readability
+##   in shell resource files (i.e., .bashrc, .zshrc) for human convenience.
+##     
+##   Use and placement of case and underscores does not matter to the shell:
+##     
+##     % set -o | grep -i correct
+##     correct               on
+##     correctall            off
+##     % set -o CORR_ECT_ALL
+##     % set -o | grep -i correct
+##     correct               on
+##     correctall            on
+##     % unsetopt C_ORRE_CTA_LL
+##     % set -o | grep -i correct
+##     correct               on
+##     correctall            off
+##     
 if [[ $0 =~ "zsh" ]]; then
     bindkey -e                 # emacs key bindings in zsh
     HISTFILE="$E_HOME/.zsh_history"
@@ -1274,19 +1352,68 @@ fi
 ## 
 ## Bash Options
 ## 
+## See shell options enabled
+##     echo $BASHOPTS
+##     shopt | grep on
+##
+##   shopt: shopt [-pqsu] [-o] [optname ...]
+##     Set and unset shell options.
+##     
+##     Change the setting of each shell option OPTNAME.  Without any option
+##     arguments, list each supplied OPTNAME, or all shell options if no
+##     OPTNAMEs are given, with an indication of whether or not each is set.
+##     
+##     Options:
+##       -o	restrict OPTNAMEs to those defined for use with `set -o'
+##       -p	print each shell option with an indication of its status
+##       -q	suppress output
+##       -s	enable (set) each OPTNAME
+##       -u	disable (unset) each OPTNAME
+## 
+## Examples:
+##     $ shopt | awk '/glob/&&/ext|null|dot/'
+##     dotglob        	off
+##     extglob        	on
+##     nullglob       	off
+## 
+##     $ shopt -p | awk '/glob/&&/ext|null|dot/'
+##     shopt -u dotglob
+##     shopt -s extglob
+##     shopt -u nullglob
+## 
 #[[ $0 =~ "bash" ]] && HISTFILE="$E_HOME/.bash_history"
 if [[ $0 =~ "bash" ]]; then 
     bind -m emacs             # emacs key bindings in bash
     HISTFILE="$E_HOME/.bash_history"
-    for BC_PATH in "/usr/share/bash-completion/bash_completion" \
-        "/usr/local/share/bash-completion/bash_completion"; do
+## Bash Completion
+##   https://sourabhbajaj.com/mac-setup/BashCompletion/
+##   https://serverfault.com/questions/506612/standard-place-for-user-defined-bash-completion-d-scripts
+##   https://serverfault.com/questions/506612/standard-place-for-user-defined-bash-completion-d-scripts/1013395#1013395
+##   https://github.com/scop/bash-completion/blob/master/README.md
+##   
+##     "$(find "${E_HOME}"/homebrew -name 'bash_completion.d' 2>/dev/null)"
+## 
+    for BC_PATH in \
+        "/usr/local/Cellar/bash-completion/*/etc/bash_completion.d" \
+        "${E_HOME}/homebrew/Cellar/bash-completion/*/etc/bash_completion.d"
+    do
         [[ -f "${BC_PATH}" ]] && BASH_COMPLETION_PATH="${BC_PATH}" && \
             export BASH_COMPLETION_PATH
+    #[[ $PS1 && -n "${BASH_COMPLETION_PATH}" ]] && \
+    #   . /usr/share/bash-completion/bash_completion
     done
-    [[ $PS1 && -n "${BASH_COMPLETION_PATH}" ]] && \
-        . /usr/share/bash-completion/bash_completion
+    for BC_FILE in \
+        "/usr/share/bash-completion/bash_completion" \
+        "/usr/local/share/bash-completion/bash_completion" \
+        "/usr/local/etc/bash_completion" \
+        "/usr/local/Cellar/helm/*/etc/bash_completion.d/helm" \
+        "/usr/local/Cellar/node/*/etc/bash_completion.d/npm"
+    do
+        [[ $PS1 && -n "${BC_FILE}" ]] && . "${BC_FILE}"
+    done
 fi
 ## END Bash Options
+
 
 ## 
 ## Common Options
@@ -1393,22 +1520,6 @@ aar () {
     echo "Expiry  time: $(date -d "$AWS_SESSION_EXPIRY")"
     unset account_id DURATION TARGET_ARN;
 }
-
-
-## 
-## JAVA stuff, in case we use it
-## 
-if [[ -z "${JAVA_HOME}" ]]; then
-    if [[ $(which java >/dev/null 2>&1) ]]; then 
-        JAVA_HOME="$(java -XshowSettings:properties -version 2>&1 | \
-            sed -ne '/java\.home/ s/.*= *//p')"
-    fi
-fi
-#if [ ${JAVA_HOME:+x} ]; then export JAVA_HOME; fi
-if [[ ${JAVA_HOME:+x} ]]; then
-    export JAVA_HOME
-    pathadd "${JAVA_HOME}/bin"
-fi
 
 
 ## 
@@ -1602,14 +1713,71 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     ## 
     ## JAVA_HOME on MacOS
     ## 
+
+    ## jenv
+    ##   Manage multiple JAVA instances with jenv if installed
+    ## 
+    ## For configuration and usage, see:
+    ##   https://www.baeldung.com/jenv-multiple-jdk
+    ## 
+    if command -v jenv &>/dev/null; then
+        printf "INFO: Checking for Java/JDK versions to manage with jenv (%s)\n" $(command -v jenv)
+        #for i in /Library/Java/JavaVirtualMachines/*/Contents/Home; do 
+        for i in $(ls -d /Library/Java/JavaVirtualMachines/*/Contents/Home 2>/dev/null); do 
+            printf "DEBUG: trying: jenv add \"%s\"\n" "${i}"
+            jenv add "${i}"
+        done 2>/dev/null
+
+        for i in $(ls -d /usr/local/Cellar/*jdk*/* 2>/dev/null); do
+            printf "DEBUG: trying: jenv add \"%s\"\n" "${i}"
+            jenv add "${i}"
+        done
+
+        #for i in /usr/local/Cellar/*java*/*; do 
+        for i in $(ls -d /usr/local/Cellar/*java*/* 2>/dev/null); do 
+            printf "DEBUG: trying: jenv add \"%s\"\n" "${i}"
+            jenv add "${i}"
+        done
+
+        if [[ -n "${BREW_HOME}" ]]; then
+            #for i in "${BREW_HOME}"/Cellar/*openjdk*/*; do 
+            for i in $(ls -d "${BREW_HOME}"/Cellar/*openjdk*/* 2>/dev/null); do 
+                printf "DEBUG: trying: jenv add \"%s\"\n" "${i}"
+                jenv add "${i}"
+            done
+        fi
+
+        if [[ -n "${BREW_HOME}" ]]; then
+            #for i in "${BREW_HOME}"/Cellar/*java*/*; do 
+            for i in $("${BREW_HOME}"/Cellar/*java*/* 2>/dev/null); do 
+                printf "DEBUG: trying: jenv add \"%s\"\n" "${i}"
+                jenv add "${i}"
+            done
+        fi
+
+        if [[ $(jenv versions | wc -l) -gt 1 ]]; then
+            printf "INFO: jenv configured with multiple Java versions\n"
+            printf "  USAGE:\n"
+            printf "    jenv global           # view global configuration\n"
+            printf "    jenv versions         # view installed versions\n"
+            printf "    jenv global 1.8       # set global version\n"
+            printf "      i.e., 1.8, 11.0, 18.0 (from \"jenv version\")\n"
+            printf "    jenv local            # view local version for PWD\n"
+            printf "    jenv local 1.8        # set local version for PWD\n"
+        fi
+    fi
+
+    ## If jenv is not present, check default JAVA location for MacOS
     ## https://stackoverflow.com/questions/64968851/could-not-find-tools-jar-please-check-that-library-internet-plug-ins-javaapple
     ## 
     ## /usr/libexec/java_home -V 2>&1 | awk '/JavaVirtualMachines/{print $NF}'
     ##   /Library/Java/JavaVirtualMachines/jdk1.8.0_211.jdk/Contents/Home
-    TJH="$(/usr/libexec/java_home -V 2>&1 | \
-        awk '/JavaVirtualMachines/{print $NF}')"
-    [ -d ${TJH} ] && JAVA_HOME=$TJH
-    [[ ${JAVA_HOME:+x} ]] && export JAVA_HOME
+    if [[ -n "${JAVA_HOME}" ]]; then
+        TJH="$(/usr/libexec/java_home -V 2>&1 | \
+            awk '/JavaVirtualMachines/{print $NF}')"
+        [ -d ${TJH} ] && JAVA_HOME=$TJH
+        [[ ${JAVA_HOME:+x} ]] && export JAVA_HOME
+    fi
 
 
     ## 
@@ -1621,6 +1789,12 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     #PERL_MB_OPT="--install_base \"/Users/${USER}/perl5\""
     #PERL_MM_OPT="INSTALL_BASE=/Users/${USER}/perl5"
     #export PATH PERL5LIB PERL_LOCAL_LIB_ROOT PERL_MB_OPT PERL_MM_OPT
+    ## 
+    ## For issues with managing library paths and strategies, see:
+    ##   https://www.sheepsystems.com/developers_blog/perl-fails-inc-again-after.html
+    ##   https://github.com/Homebrew/homebrew-core/issues/10133
+    ##   https://metacpan.org/pod/local::lib
+    ## 
 
     UUP="/Users/${USER}/perl5"
     pathadd "${UUP}/bin"
@@ -1643,6 +1817,25 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     fi
 fi      ## /MacOS
 
+
+## 
+## JAVA stuff, in case we use it
+##    If not already set for the environment/system
+## 
+if [[ -z "${JAVA_HOME}" ]]; then
+    if [[ $(which java >/dev/null 2>&1) ]]; then 
+        JAVA_HOME="$(java -XshowSettings:properties -version 2>&1 | \
+            sed -ne '/java\.home/ s/.*= *//p')"
+    fi
+fi
+if [[ ${JAVA_HOME:+x} ]]; then
+    export JAVA_HOME
+    pathadd "${JAVA_HOME}/bin"
+fi
+
+
+## OTHER Configurations
+## 
 ## Import settings or functions that may contain proprietary references  
 ## that cannot be easily obscured with regex or other references from 
 ## a separate configuration file to allow the base shell resource file 
