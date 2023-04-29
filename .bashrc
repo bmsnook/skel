@@ -48,7 +48,9 @@
 E_HOME="${HOME}"
 case "$(uname -n)" in
     ip-10*)
-        E_HOME="${HOME}/tmp.bsnook" ;;
+        E_HOME="${HOME}/tmp.bsnook"
+        cde() { cd "${E_HOME}"; }
+        ;;
     *)
         E_HOME="${HOME}" ;;
 esac
@@ -209,11 +211,12 @@ TPD=/usr/xpg4/bin                               && pathadd "${TPD}"
 TPD=/usr/dt/bin                                 && pathadd "${TPD}"
 TPD=/opt/google/chrome                          && pathadd "${TPD}"
 TPD=/Applications/Bluefish.app/Contents/MacOS   && pathadd "${TPD}"
+TPD="/Applications/Visual Studio Code.app/Contents/Resources/app/bin" \
+    && pathadd "${TPD}"
 TPD="${HOME}"/Library/Python/3.8/bin            && pathadd "${TPD}"
 TPD=/usr/local/opt/qt@5/bin                     && pathadd "${TPD}"
 TPD=/usr/local/Cellar/qt@5/5.15.3/bin           && pathadd "${TPD}"
 TPD=/usr/local/go/bin                           && pathadd "${TPD}"
-#TPD="${JAVA_HOME}/bin"                          && pathadd "${TPD}"
 TPD="/c/OpenSSH-Win64"                          && pathadd "${TPD}"
 TPD="${CWINDOWS}"                               && pathadd "${TPD}"
 TPD="${WPF}"/Git/bin                            && pathadd "${TPD}"
@@ -355,13 +358,23 @@ if [[ $0 =~ "zsh" ]]; then
     #PROMPT="%n@%m:%~%# " && export PROMPT
     # Set Simple Prompt
     ssp() { 
-        PS1="%n@%m:%~%# "
+        case "$(uname -n)" in 
+            ATL*)
+                PS1="%n@laptop:%~%# " ;;
+            *)
+                PS1="%n@%m:%~%# " ;;
+        esac
         export PS1
     }
     # Set Fancy Prompt
     sfp() { 
         setopt PROMPT_SUBST
-        PS1="%n@%m:%B\$(parse_git_toplevel)%b\$(parse_git_branch):%~%B%#%b "
+        case "$(uname -n)" in 
+            ATL*)
+                PS1="%n@laptop:%B\$(parse_git_toplevel)%b\$(parse_git_branch):%~%B%#%b " ;;
+            *)
+                PS1="%n@%m:%B\$(parse_git_toplevel)%b\$(parse_git_branch):%~%B%#%b " ;;
+        esac
         export PS1
     }
 fi
@@ -897,7 +910,6 @@ gdiff() { git log $1 | \
         END{cmd=sprintf("git diff %s %s",cmd,FN);
         print cmd; system(cmd);close(cmd)}'; 
 }
-## 
 parse_git_branch() {
     #git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
     git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
@@ -1030,7 +1042,10 @@ cppfd() {
 ## 
 compdate ()
 {
+    # Check date binary
+    # GNU date
     DATED=$(date -d "1800 seconds" "+%Y%m%d_%H%M%S" > /dev/null 2>&1; echo $?)  
+    # AT&T/MacOS date
     DATEV=$(date -v "+1800S" "+%Y%m%d_%H%M%S" > /dev/null 2>&1; echo $?)             
     if [[ $(date -d "${1}" +%s) -lt $(date -d "${2}" +%s) ]]; then
         echo "${1}  <  ${2}  (to the FUTURE)";
@@ -1252,6 +1267,27 @@ recol() {
       printf("\n")
     }
   }' "${@}"
+}
+
+
+## 
+## Concatenate to Archive and Unwind
+## 
+catar() {
+    sample="${1}"
+    shift
+    nfsl=$(wc -l "${sample}" | gawk '{printf "%x\n",$1+2}')
+    reborn="${sample%.*}_$(date +"%Y-%m-%d_%H%M")__${nfsl}.${sample##*.}"
+    ( cat "${sample}" && echo "###" && tar cf - "${@}" | gzip -9 - ) > "${reborn}"
+}
+
+ratac() {
+    hermes="${1}"
+    xlb="${hermes//*__}"
+    xlx="${xlb%.*}"
+    #printf "${hermes} => \"${xlb}\" \"${xlx}\" \"${xle}\"\n"
+    sln=$(echo "0x${xlx}" | ${AWK} '{printf "%d\n",strtonum($1)}')
+    sed -n "${sln},$ p" "${hermes}" | gzip -dc - | tar xvf -
 }
 
 
@@ -1508,10 +1544,13 @@ TMOUT=0
 ## 
 ## AWS
 ## 
-goar1() { export AWS_DEFAULT_REGION='us-east-1'; }
-goar2() { export AWS_DEFAULT_REGION='us-east-2'; }
-goap1() { export AWS_PROFILE='first'; }
-goap2() { export AWS_PROFILE='default'; }
+goar1()  { export AWS_DEFAULT_REGION='us-east-1'; }
+goar2()  { export AWS_DEFAULT_REGION='us-east-2'; }
+goap1()  { export AWS_PROFILE='first'; }
+goap2()  { export AWS_PROFILE='default'; }
+goaprod(){ export AWS_SHARED_CREDENTIALS_FILE="${E_HOME}/.aws/credentials.prod"; }
+goanpe() { export AWS_SHARED_CREDENTIALS_FILE="${E_HOME}/.aws/credentials.non-prod"; }
+
 
 aws_env() {
     if [[ $# -eq 1 ]]; then
@@ -1539,7 +1578,7 @@ aws_env_tf() {
 
 ## 
 ## Assume Account Role - assume AWS account roles
-##   Original script by D. Shulz; modified to avoid a temp file 
+##   Original script by D. Shultz; modified to avoid a temp file 
 ##   for KEY/TOKEN values for security while sharing dotfile 
 ##   and avoiding session conflicts
 ## 
@@ -1554,6 +1593,11 @@ aws_env_tf() {
 aar () {
     #set +x
     export account_id=$1
+    # Check whether GNU or AT&T/MacOS date binary
+    # GNU date
+    DATED=$(date -d "1800 seconds" "+%Y%m%d_%H%M%S" > /dev/null 2>&1; echo $?)  
+    # AT&T/MacOS date
+    DATEV=$(date -v "+1800S" "+%Y%m%d_%H%M%S" > /dev/null 2>&1; echo $?)             
     ID_ROLE_FILE="${E_HOME}/.aws/externalid_role"
     if [[ -f "${ID_ROLE_FILE}" ]]; then 
         eval $( sed -e '/^export/!s/^/export /' "${ID_ROLE_FILE}" )
@@ -1727,7 +1771,7 @@ if [[ `uname -s` =~ "Darwin" ]]; then
 
     macvim() { for i in "${@}"; do
         [[ -f "${i}" ]] && open -a MacVim "${i}" || \
-            { { printf "File \"%i\" does not exist. Create? [yN] " "${i}" && \
+            { { printf "File \"%s\" does not exist. Create? [yN] " "${i}" && \
                 read reply && [[ "$reply" =~ [yY] ]]; } && \
                 { touch "${i}" && open -a MacVim "${i}"; } || \
                     echo "No file found to edit." ; }
@@ -1742,6 +1786,44 @@ if [[ `uname -s` =~ "Darwin" ]]; then
 
     ## Visual Studio
     ## 
+    ## NOTE: Settings are stored in the directory
+    ##   "${HOME}"/"Library/Application Support/Code/User"
+    ##   
+    ##   % cd Library/Application\ Support/Code/User 
+    ##   % for i in *.json; do echo "# FILE: $i"; cat $i && printf "\n\n"; done
+    ##   # FILE: keybindings.json
+    ##   // Place your key bindings in this file to override the defaults
+    ##   [
+    ##       // Enable (Shift-)Control-Tab to move between tabs based on 
+    ##       //   (visible) adjacency rather than (invisible) last update time
+    ##       // https://stackoverflow.com/a/38978993
+    ##       {
+    ##           "key": "ctrl+tab",
+    ##           "command": "workbench.action.nextEditor"
+    ##       },
+    ##       {
+    ##           "key": "ctrl+shift+tab",
+    ##           "command": "workbench.action.previousEditor"
+    ##       }
+    ##   ]
+    ##   
+    ##   # FILE: settings.json
+    ##   {
+    ##       // Restore some sanity and make Visual Studio a better-behaved Mac app
+    ##       // Enables macOS Sierra window tabs. 
+    ##       // Note that changes require a full restart to apply and that 
+    ##       // native tabs will disable a custom title bar style if configured.
+    ##       // 
+    ##       "window.nativeTabs": true,
+    ##       // Adjust the appearance of the window title bar. 
+    ##       // On Linux and Windows, this setting also affects the application 
+    ##       // and context menu appearances. Changes require a full restart to apply.
+    ##       // 
+    ##       "window.titleBarStyle": "native",
+    ##       "security.workspace.trust.untrustedFiles": "open",
+    ##       "window.openFilesInNewWindow": "on"
+    ##   }
+    ##   
     [[ -e "/Applications/Visual Studio.app" ]] && \
         vs() { open -a "Visual Studio" "${@}"; }
     [[ -e "/Applications/Visual Studio Code.app" ]] && \
@@ -1972,6 +2054,7 @@ if [[ `uname -s` =~ "Darwin" ]]; then
         [[ ! -z "${PERL_MM_OPT}" ]]            &&   export PERL_MM_OPT
     fi
 fi      ## /MacOS
+## END MacOS
 
 
 ## 
