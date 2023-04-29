@@ -1940,83 +1940,6 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     PKG_CONFIG_PATH="${QT_BASE}/lib/pkgconfig:${OPENSSL_BASE}/lib/pkgconfig"
     export PKG_CONFIG_PATH
 
-    ## 
-    ## JAVA_HOME on MacOS
-    ## 
-
-    ## jenv
-    ##   Manage multiple JAVA instances with jenv if installed
-    ## 
-    ## For configuration and usage, see:
-    ##   https://www.baeldung.com/jenv-multiple-jdk
-    ## 
-    ##   To activate jenv, add the following to your shell profile 
-    ##       e.g. ~/.profile or ~/.zshrc
-    ## 
-    ##   export PATH="$HOME/.jenv/bin:$PATH"
-    ##   eval "$(jenv init -)"
-    ##     
-    if command -v jenv &>/dev/null; then
-        pathadd_left "${HOME}/.jenv/shims"
-        export PATH
-        eval "$(jenv init - | grep -v 'PATH=')"
-
-        printf "INFO: Checking for Java/JDK versions to manage with jenv (%s)\n" $(command -v jenv)
-        #for i in /Library/Java/JavaVirtualMachines/*/Contents/Home; do 
-        #for i in $(ls -d /Library/Java/JavaVirtualMachines/*/Contents/Home 2>/dev/null); do 
-        for found_system_java_version in \
-            $( find /Library/Java/JavaVirtualMachines -name Home -exec readlink -f {} \; | sort -u )
-        do
-            printf "DEBUG: trying: jenv add \"%s\"\n" "${found_system_java_version}"
-            jenv add "${found_system_java_version}"
-        done    >/dev/null  2>&1
-
-        homebrew_paths=()
-        homebrew_paths=( $( for each_possible_hb_path in \
-            "/opt/homebrew" \
-            "/usr/local/Cellar" \
-            "/usr/local/homebrew" \
-            "${HOMEBREW_PREFIX}" \
-            "${HOME}/homebrew" \
-            "${BREW_HOME}"
-        do
-            if [[ -d "${each_possible_hb_path}" ]]; then
-                echo "${each_possible_hb_path}"
-            fi
-        done | xargs readlink -f | sort -u ) )
-
-        for found_homebrew_java_version in \
-            $(find $(find "${homebrew_paths[@]}" \
-                -maxdepth 1 \( -name '*jdk*' -o -name '*jre*' -o -name '*java*' \) ) \
-                -type d -name libexec -exec dirname {} \; | xargs readlink -f | sort -u)
-        do
-            jenv add "${found_homebrew_java_version}"
-        done    >/dev/null  2>&1
-
-        if [[ $(jenv versions | wc -l) -gt 1 ]]; then
-            printf "INFO: jenv configured with multiple Java versions\n"
-            printf "  USAGE:\n"
-            printf "    jenv global           # view global configuration\n"
-            printf "    jenv versions         # view installed versions\n"
-            printf "    jenv global 1.8       # set global version\n"
-            printf "      i.e., 1.8, 11.0, 18.0 (from \"jenv version\")\n"
-            printf "    jenv local            # view local version for PWD\n"
-            printf "    jenv local 1.8        # set local version for PWD\n"
-        fi
-    fi
-
-    ## If jenv is not present, check default JAVA location for MacOS
-    ## https://stackoverflow.com/questions/64968851/could-not-find-tools-jar-please-check-that-library-internet-plug-ins-javaapple
-    ## 
-    ## /usr/libexec/java_home -V 2>&1 | awk '/JavaVirtualMachines/{print $NF}'
-    ##   /Library/Java/JavaVirtualMachines/jdk1.8.0_211.jdk/Contents/Home
-    if [[ -n "${JAVA_HOME}" ]]; then
-        TJH="$(/usr/libexec/java_home -V 2>&1 | \
-            awk '/JavaVirtualMachines/{print $NF}')"
-        [ -d ${TJH} ] && JAVA_HOME=$TJH
-        [[ ${JAVA_HOME:+x} ]] && export JAVA_HOME
-    fi
-
 
     ## 
     ## Perl Environment
@@ -2060,6 +1983,85 @@ fi      ## /MacOS
 ## 
 ## JAVA stuff, in case we use it
 ##    If not already set for the environment/system
+## 
+## jenv
+##   Manage multiple JAVA instances with jenv if installed
+## 
+## For configuration and usage, see:
+##   https://www.baeldung.com/jenv-multiple-jdk
+## 
+##   To activate jenv, add the following to your shell profile 
+##       e.g. ~/.profile or ~/.zshrc
+## 
+##   export PATH="$HOME/.jenv/bin:$PATH"
+##   eval "$(jenv init -)"
+##     
+if command -v jenv &>/dev/null; then
+    pathadd_left "${HOME}/.jenv/shims"
+    export PATH
+    eval "$(jenv init - | grep -v 'PATH=')"
+
+	printf "\nINFO: 'jenv' is installed to manage multiple Java versions\n"
+    printf "INFO: use function 'refresh_jenv' to check for new versions\n"
+    if [[ $(jenv versions | wc -l) -gt 1 ]]; then
+        printf "INFO: jenv configured with multiple Java versions\n"
+        printf "  USAGE:\n"
+        printf "    jenv global           # view global configuration\n"
+        printf "    jenv versions         # view installed versions\n"
+        printf "    jenv global 1.8       # set global version\n"
+        printf "      i.e., 1.8, 11.0, 18.0 (from \"jenv version\")\n"
+        printf "    jenv local            # view local version for PWD\n"
+        printf "    jenv local 1.8        # set local version for PWD\n"
+    fi
+fi
+refresh_jenv() {
+    printf "INFO: Checking for Java/JDK versions to manage with jenv (%s)\n" $(command -v jenv)
+    #for i in /Library/Java/JavaVirtualMachines/*/Contents/Home; do 
+    #for i in $(ls -d /Library/Java/JavaVirtualMachines/*/Contents/Home 2>/dev/null); do 
+    for found_system_java_version in \
+        $( find /Library/Java/JavaVirtualMachines -name Home -exec readlink -f {} \; | sort -u )
+    do
+        printf "DEBUG: trying: jenv add \"%s\"\n" "${found_system_java_version}"
+        jenv add "${found_system_java_version}"
+    done    >/dev/null  2>&1
+
+    homebrew_paths=()
+    homebrew_paths=( $( for each_possible_hb_path in \
+        "/opt/homebrew" \
+        "/usr/local/Cellar" \
+        "/usr/local/homebrew" \
+        "${HOMEBREW_PREFIX}" \
+        "${HOME}/homebrew" \
+        "${BREW_HOME}"
+    do
+        if [[ -d "${each_possible_hb_path}" ]]; then
+            echo "${each_possible_hb_path}"
+        fi
+    done | xargs readlink -f | sort -u ) )
+
+    for found_homebrew_java_version in \
+        $(find $(find "${homebrew_paths[@]}" \
+            -maxdepth 1 \( -name '*jdk*' -o -name '*jre*' -o -name '*java*' \) ) \
+            -type d -name libexec -exec dirname {} \; | xargs readlink -f | sort -u)
+    do
+        jenv add "${found_homebrew_java_version}"
+    done    >/dev/null  2>&1
+}
+
+## If jenv is not present, check default JAVA location for MacOS
+## https://stackoverflow.com/questions/64968851/could-not-find-tools-jar-please-check-that-library-internet-plug-ins-javaapple
+## 
+## /usr/libexec/java_home -V 2>&1 | awk '/JavaVirtualMachines/{print $NF}'
+##   /Library/Java/JavaVirtualMachines/jdk1.8.0_211.jdk/Contents/Home
+if [[ -n "${JAVA_HOME}" ]]; then
+    TJH="$(/usr/libexec/java_home -V 2>&1 | \
+        awk '/JavaVirtualMachines/{print $NF}')"
+    [ -d ${TJH} ] && JAVA_HOME=$TJH
+    [[ ${JAVA_HOME:+x} ]] && export JAVA_HOME
+fi
+
+## 
+## One more check in case JAVA_HOME is not set yet
 ## 
 if [[ -z "${JAVA_HOME}" ]]; then
     if [[ $(which java >/dev/null 2>&1) ]]; then 
