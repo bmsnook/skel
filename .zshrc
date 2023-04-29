@@ -17,6 +17,7 @@
 # Update: 2023-03-15 (add: cdf, Google Chrome app functions for MacOS)
 # Update: 2023-03-16 (add: show function for MacOS)
 # Update: 2023-04-27 (add: jenv configurations)
+# Update: 2023-04-28 (add: homebrew configs; improved jenv configs)
 # 
 
 # Example shell startup provided to get started
@@ -141,6 +142,16 @@ pathadd() {
     PATH="${PATH:+$PATH:}$1"
   fi
 }
+pathadd_right() {
+  if [[ -d "$1" ]] && [[ ":$PATH:" != *":$1:"* ]]; then
+    PATH="${PATH:+$PATH:}$1"
+  fi
+}
+pathadd_left() {
+  if [[ -d "$1" ]] && [[ ":$PATH:" != *":$1:"* ]]; then
+    PATH="$1${PATH:+:$PATH}"
+  fi
+}
 
 ## 
 ## PATH - Windows PATH prefixes (e.g., for git bash)
@@ -175,9 +186,6 @@ done
 ## 
 TPD=/usr/local/sbin                             && pathadd "${TPD}"
 TPD=/usr/local/bin                              && pathadd "${TPD}"
-TPD="${HOME}/.jenv/bin"                         && pathadd "${TPD}"
-TPD="${HOME}/.jenv/shims"                       && pathadd "${TPD}"
-TPD="${E_HOME}/homebrew/bin"                    && pathadd "${TPD}"
 TPD=/usr/sbin                                   && pathadd "${TPD}"
 TPD=/usr/bin                                    && pathadd "${TPD}"
 TPD=/sbin                                       && pathadd "${TPD}"
@@ -238,6 +246,16 @@ manpathadd() {
         MANPATH="${MANPATH:+$MANPATH:}$1"
     fi
 }
+manpathadd_right() {
+    if [[ -d "$1" ]] && [[ ":$MANPATH:" != *":$1:"* ]]; then
+        MANPATH="${MANPATH:+$MANPATH:}$1"
+    fi
+}
+manpathadd_left() {
+    if [[ -d "$1" ]] && [[ ":$MANPATH:" != *":$1:"* ]]; then
+        MANPATH="$1${MANPATH:+:$MANPATH}"
+    fi
+}
 
 ##
 ## MANPATH
@@ -289,8 +307,20 @@ MANPD=/usr/local/perl/man              && manpathadd "${MANPD}"
 MANPD=/usr/local/perl5.8.0/man         && manpathadd "${MANPD}"
 MANPD=/usr/openwin/man                 && manpathadd "${MANPD}"
 MANPD=/opt/java/openjdk/man            && manpathadd "${MANPD}"
-MANPD="${E_HOME}/homebrew/manpages"    && manpathadd "${MANPD}"
 export MANPATH
+
+## 
+## INFOPATH
+## 
+for each_possible in \
+    /usr/local/share/info \
+    /usr/share/info
+do
+    if [[ -d "${each_possible}" ]] && [[ ":${INFOPATH}:" != *":${each_possible}:"* ]]; then
+        INFOPATH="${each_possible}${INFOPATH:+:$INFOPATH}"
+    fi
+done
+export INFOPATH
 
 ##
 ## PROMPT
@@ -580,11 +610,8 @@ findbin() {
 ## NOTE: SHELL_STARTUP_FPATH now includes the EFFECTIVE HOME variable E_HOME 
 ##   path to ease management of user-specific settings on shared accounts
 ## 
-showfuncs0() { 
-    ${AWK} '/^[[:alnum:]_-]+ {0,}\( *\)/{print $1}' "${SHELL_STARTUP_FPATH}"; 
-}
 showfuncs() { 
-    ${AWK} '/^[[:space:]]*[[:alnum:]_-]+ {0,}\( *\)/{print $1}' \
+    ${AWK} '/^[[:space:]]*[[:alnum:]_-]+ *\( *\)/{gsub("\\("," ");print $1}' \
     "${SHELL_STARTUP_FPATH}" | sort -u; 
 }
 ## 
@@ -593,9 +620,6 @@ showfuncs() {
 ## "which [function]" in zsh and "type [function]" in bash do the same thing
 ## It is still an interesting regex exercise in awk
 ## 
-showfunc0()  { 
-    ${AWK} -v FUNC="${1}" '$0 ~ "^"FUNC" *\\(",/^}/' "${SHELL_STARTUP_FPATH}";
-}
 showfunc() {
     ${AWK} -v FUNC="${1}" '
         function if_equal_braces(line) {
@@ -1364,17 +1388,17 @@ fi
 ##     OPTNAMEs are given, with an indication of whether or not each is set.
 ##     
 ##     Options:
-##       -o	restrict OPTNAMEs to those defined for use with `set -o'
-##       -p	print each shell option with an indication of its status
-##       -q	suppress output
-##       -s	enable (set) each OPTNAME
-##       -u	disable (unset) each OPTNAME
+##       -o restrict OPTNAMEs to those defined for use with `set -o'
+##       -p print each shell option with an indication of its status
+##       -q suppress output
+##       -s enable (set) each OPTNAME
+##       -u disable (unset) each OPTNAME
 ## 
 ## Examples:
 ##     $ shopt | awk '/glob/&&/ext|null|dot/'
-##     dotglob        	off
-##     extglob        	on
-##     nullglob       	off
+##     dotglob          off
+##     extglob          on
+##     nullglob         off
 ## 
 ##     $ shopt -p | awk '/glob/&&/ext|null|dot/'
 ##     shopt -u dotglob
@@ -1393,23 +1417,58 @@ if [[ $0 =~ "bash" ]]; then
 ##   
 ##     "$(find "${E_HOME}"/homebrew -name 'bash_completion.d' 2>/dev/null)"
 ## 
-    for BC_PATH in \
-        "/usr/local/Cellar/bash-completion/*/etc/bash_completion.d" \
-        "${E_HOME}/homebrew/Cellar/bash-completion/*/etc/bash_completion.d"
+    printf "INFO: Looking for bash completion configurations\n"
+    ## printf "DEBUG: Determining possible bash completion ancestor dirs\n"
+    possible_bc_ancestor_dirs=()
+    possible_bc_ancestor_dirs=( $( for each_path in \
+        "/etc" \
+        "/opt" \
+        "/usr/opt" \
+        "/usr/local" \
+        "/usr/share" \
+        "${HOMEBREW_PREFIX}" \
+        "${HOME}/.bash_completion.d" \
+        "${E_HOME}/.bash_completion.d"
     do
-        [[ -f "${BC_PATH}" ]] && BASH_COMPLETION_PATH="${BC_PATH}" && \
-            export BASH_COMPLETION_PATH
-    #[[ $PS1 && -n "${BASH_COMPLETION_PATH}" ]] && \
-    #   . /usr/share/bash-completion/bash_completion
-    done
-    for BC_FILE in \
-        "/usr/share/bash-completion/bash_completion" \
-        "/usr/local/share/bash-completion/bash_completion" \
-        "/usr/local/etc/bash_completion" \
-        "/usr/local/Cellar/helm/*/etc/bash_completion.d/helm" \
-        "/usr/local/Cellar/node/*/etc/bash_completion.d/npm"
-    do
-        [[ $PS1 && -n "${BC_FILE}" ]] && . "${BC_FILE}"
+        if [[ -d "${each_path}" ]]; then
+            printf "\"${each_path}\"\n"
+        fi
+    done | xargs readlink -f | sort -u ) )  2>/dev/null
+    #printf "FOUND possible parent dirs:\n"
+    #printf "    %s\n" "${possible_bc_ancestor_dirs[@]}\n"
+
+
+#    ## printf "DEBUG: finding completion DIRS\n"
+#    found_bash_completion_dirs=( $(find "${possible_bc_ancestor_dirs[@]}" \
+#        \( -name 'bash_completion' -o -name 'bash_completion.d' -o -name 'bash-completion.d' \) \
+#        -type d  2>/dev/null | xargs readlink -f | sort -u) )
+#    printf "FOUND bash completion dirs:\n"
+#    printf "    %s\n" "${found_bash_completion_dirs[@]}"
+
+
+    ## printf "DEBUG: finding completion FILES\n"
+    found_bash_completion_files=( $(find "${possible_bc_ancestor_dirs[@]}" \
+        "${E_HOME}/.bash_completion" \( \
+                -name 'bash_completion' \
+                -o -name '.bash_completion' \
+                -o -name 'bash_completion.sh' \
+                -o -name 'bash-completion.sh' \
+            \) -type f  2>/dev/null | xargs readlink -f | sort -u) ) 
+    #printf "FOUND bash completion files:\n"
+    #printf "    %s\n" "${found_bash_completion_files[@]}"
+
+
+#    printf "DEBUG: processing completion DIRS\n"
+#    for BC_PATH in "${found_bash_completion_dirs[@]}"; do 
+#        for COMPLETION_FILE in "$(ls "${BC_PATH}")"; do 
+#            echo source "${COMPLETION_FILE}"
+#        done
+#    done
+
+    #printf "INFO: processing completion FILES\n"
+    for BC_FILE in "${found_bash_completion_files[@]}"; do 
+        #echo source "${BC_FILE}"
+        source "${BC_FILE}"
     done
 fi
 ## END Bash Options
@@ -1558,6 +1617,88 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     }
 
     ## 
+    ## Homebrew
+    ## 
+    ## Basic Installation (requires admin/sudo access)
+    ##   https://brew.sh/
+    ##     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    ## 
+    ## Per-User Installation (shared system or no admin/sudo access)
+    ## 
+    ##   https://docs.brew.sh/Installation#multiple-installations
+    ##   FIRST
+    ##       mkdir homebrew && curl -L https://github.com/Homebrew/brew/tarball/master | \
+    ##           tar xz --strip 1 -C homebrew
+    ##     OR
+    ##       git clone https://github.com/Homebrew/brew homebrew
+    ##   THEN
+    ##       eval "$(homebrew/bin/brew shellenv)"
+    ##       brew update --force --quiet
+    ##       chmod -R go-w "$(brew --prefix)/share/zsh"
+    ## 
+    ## Show what the default "shellenv" output would be like 
+    ##     (for adding to shell resource file)
+    ## 
+    show_brew_env() {
+#        if [[ "${1}" == "-a" ]] && [[ ${#} -ge 1 ]] ; then
+        BREW_APP="$(find \
+            /opt/homebrew \
+            /usr/local/Cellar \
+            /usr/local/homebrew \
+            "${HOMEBREW_PREFIX}" \
+            "${HOME}/homebrew" \
+            -maxdepth 2 -type f -name brew 2>/dev/null | tail -1
+        )"
+        if [[ "${1}" == "-a" ]] && [[ ${#} -ge 1 ]] ; then
+            if [[ -n "${BREW_APP}" ]]; then
+                printf "%s\n" "${BREW_APP}"
+                return 0
+            fi
+        else
+            if [[ -n "${BREW_APP}" ]]; then
+                "${BREW_APP}" shellenv
+                return 0
+            else
+                printf "No homebrew installation found." > /dev/stderr
+                return 1
+            fi
+        fi
+    }
+
+    ## Default "brew shellenv" output is like:
+    ##   export HOMEBREW_PREFIX="/usr/local/homebrew";
+    ##   export HOMEBREW_CELLAR="/usr/local/homebrew/Cellar";
+    ##   export HOMEBREW_REPOSITORY="/usr/local/homebrew";
+    ##   export PATH="/usr/local/homebrew/bin:/usr/local/homebrew/sbin${PATH+:$PATH}";
+    ##   export MANPATH="/usr/local/homebrew/share/man${MANPATH+:$MANPATH}:";
+    ##   export INFOPATH="/usr/local/homebrew/share/info:${INFOPATH:-}";
+    ##  or
+    ##   export HOMEBREW_PREFIX="/Users/brian/homebrew";
+    ##   export HOMEBREW_CELLAR="/Users/brian/homebrew/Cellar";
+    ##   export HOMEBREW_REPOSITORY="/Users/brian/homebrew";
+    ##   export PATH="/Users/brian/homebrew/bin:/Users/brian/homebrew/sbin${PATH+:$PATH}";
+    ##   export MANPATH="/Users/brian/homebrew/share/man${MANPATH+:$MANPATH}:";
+    ##   export INFOPATH="/Users/brian/homebrew/share/info:${INFOPATH:-}";
+    ## 
+    ## Build our own to take advantage of functions guaranteeing unique paths
+    ## 
+    BREW_APP="$(show_brew_env -a)"
+    if [[ -n "${BREW_APP}" ]]; then
+        HOMEBREW_PREFIX="${BREW_APP%/bin/brew}";
+        HOMEBREW_CELLAR="${HOMEBREW_PREFIX}/Cellar";
+        HOMEBREW_REPOSITORY="${HOMEBREW_PREFIX}";
+        pathadd_left "${HOMEBREW_PREFIX}/sbin"
+        pathadd_left "${HOMEBREW_PREFIX}/bin"
+        manpathadd_left "${HOMEBREW_PREFIX}/share/man"
+        HOMEBREW_INFO="${HOMEBREW_PREFIX}/share/info"
+        if [[ -d "${HOMEBREW_INFO}" ]] && [[ ":${INFOPATH}:" != *":${HOMEBREW_INFO}:"* ]]; then
+            INFOPATH="${HOMEBREW_INFO}${INFOPATH:+:${INFOPATH}}"
+        fi
+    fi
+    export HOMEBREW_PREFIX HOMEBREW_CELLAR HOMEBREW_REPOSITORY PATH MANPATH INFOPATH
+
+    
+    ## 
     ## Functions to open Mac Apps
     ## 
 
@@ -1578,7 +1719,7 @@ if [[ `uname -s` =~ "Darwin" ]]; then
 
     macvim() { for i in "${@}"; do
         [[ -f "${i}" ]] && open -a MacVim "${i}" || \
-            { { echo -n "File \"${i}\" does not exist. Create? [yN] " && \
+            { { printf "File \"%i\" does not exist. Create? [yN] " "${i}" && \
                 read reply && [[ "$reply" =~ [yY] ]]; } && \
                 { touch "${i}" && open -a MacVim "${i}"; } || \
                     echo "No file found to edit." ; }
@@ -1601,11 +1742,10 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     LYNX='/Applications/Lynxlet.app/Contents/Resources/lynx/bin/lynx'
     [[ -f "${LYNX}" ]] && alias lynx="${LYNX}"
 
-    [[ "${UN}" =~ "^ATL" ]] && BREW_HOME="${HOME}"/homebrew
 
     ## Google Chrome
     ## 
-    chrome() { open -a "Google Chrome"; }
+    chrome() { open -a "Google Chrome" "${@}"; }
     ## 
     ## Define Functions to open Google Apps, if installed
     ## 
@@ -1720,40 +1860,48 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     ## For configuration and usage, see:
     ##   https://www.baeldung.com/jenv-multiple-jdk
     ## 
+    ##   To activate jenv, add the following to your shell profile 
+    ##       e.g. ~/.profile or ~/.zshrc
+    ## 
+    ##   export PATH="$HOME/.jenv/bin:$PATH"
+    ##   eval "$(jenv init -)"
+    ##     
     if command -v jenv &>/dev/null; then
+        pathadd_left "${HOME}/.jenv/shims"
+        export PATH
+        eval "$(jenv init - | grep -v 'PATH=')"
+
         printf "INFO: Checking for Java/JDK versions to manage with jenv (%s)\n" $(command -v jenv)
         #for i in /Library/Java/JavaVirtualMachines/*/Contents/Home; do 
-        for i in $(ls -d /Library/Java/JavaVirtualMachines/*/Contents/Home 2>/dev/null); do 
-            printf "DEBUG: trying: jenv add \"%s\"\n" "${i}"
-            jenv add "${i}"
-        done 2>/dev/null
+        #for i in $(ls -d /Library/Java/JavaVirtualMachines/*/Contents/Home 2>/dev/null); do 
+        for found_system_java_version in \
+            $( find /Library/Java/JavaVirtualMachines -name Home -exec readlink -f {} \; | sort -u )
+        do
+            printf "DEBUG: trying: jenv add \"%s\"\n" "${found_system_java_version}"
+            jenv add "${found_system_java_version}"
+        done    >/dev/null  2>&1
 
-        for i in $(ls -d /usr/local/Cellar/*jdk*/* 2>/dev/null); do
-            printf "DEBUG: trying: jenv add \"%s\"\n" "${i}"
-            jenv add "${i}"
-        done
+        homebrew_paths=()
+        homebrew_paths=( $( for each_possible_hb_path in \
+            "/opt/homebrew" \
+            "/usr/local/Cellar" \
+            "/usr/local/homebrew" \
+            "${HOMEBREW_PREFIX}" \
+            "${HOME}/homebrew" \
+            "${BREW_HOME}"
+        do
+            if [[ -d "${each_possible_hb_path}" ]]; then
+                echo "${each_possible_hb_path}"
+            fi
+        done | xargs readlink -f | sort -u ) )
 
-        #for i in /usr/local/Cellar/*java*/*; do 
-        for i in $(ls -d /usr/local/Cellar/*java*/* 2>/dev/null); do 
-            printf "DEBUG: trying: jenv add \"%s\"\n" "${i}"
-            jenv add "${i}"
-        done
-
-        if [[ -n "${BREW_HOME}" ]]; then
-            #for i in "${BREW_HOME}"/Cellar/*openjdk*/*; do 
-            for i in $(ls -d "${BREW_HOME}"/Cellar/*openjdk*/* 2>/dev/null); do 
-                printf "DEBUG: trying: jenv add \"%s\"\n" "${i}"
-                jenv add "${i}"
-            done
-        fi
-
-        if [[ -n "${BREW_HOME}" ]]; then
-            #for i in "${BREW_HOME}"/Cellar/*java*/*; do 
-            for i in $("${BREW_HOME}"/Cellar/*java*/* 2>/dev/null); do 
-                printf "DEBUG: trying: jenv add \"%s\"\n" "${i}"
-                jenv add "${i}"
-            done
-        fi
+        for found_homebrew_java_version in \
+            $(find $(find "${homebrew_paths[@]}" \
+                -maxdepth 1 \( -name '*jdk*' -o -name '*jre*' -o -name '*java*' \) ) \
+                -type d -name libexec -exec dirname {} \; | xargs readlink -f | sort -u)
+        do
+            jenv add "${found_homebrew_java_version}"
+        done    >/dev/null  2>&1
 
         if [[ $(jenv versions | wc -l) -gt 1 ]]; then
             printf "INFO: jenv configured with multiple Java versions\n"
@@ -1835,6 +1983,13 @@ fi
 
 
 ## OTHER Configurations
+## 
+## RVM - load Ruby Version Manager into the shell session as a function
+## 
+[[ -s "${E_HOME}/.rvm/scripts/rvm" ]] && source "${E_HOME}/.rvm/scripts/rvm"
+
+
+## PRIVATE Configurations
 ## 
 ## Import settings or functions that may contain proprietary references  
 ## that cannot be easily obscured with regex or other references from 
