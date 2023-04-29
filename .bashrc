@@ -130,8 +130,6 @@ EOF
 fi
 
 
-
-
 ## 
 ## pathadd - add dir to path if not present
 ## 
@@ -545,9 +543,6 @@ export USER
 ##
 ## FUNCTIONS (define useful utilities)
 ##
-## Start X in the background, disown the process, 
-## and exit, so the parent tty can't be hijacked
-##
 is_interactive_shell() {
     [[ "$-" =~ "i" ]]
 }
@@ -892,13 +887,17 @@ nt() {
 ## Git Stuff
 ## 
 alias gp='git pull'
+## 
+## Git Diff
+##   diff the most recent commits
+## 
 gdiff() { git log $1 | \
     ${AWK} -v FN="$1" '/commit/{cmd=sprintf("%s %s",$2,cmd);\
         count++;if(count>=2){exit}}
         END{cmd=sprintf("git diff %s %s",cmd,FN);
         print cmd; system(cmd);close(cmd)}'; 
 }
-
+## 
 parse_git_branch() {
     #git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
     git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
@@ -912,6 +911,17 @@ parse_git_toplevel() {
         printf ""
     fi
 }
+## 
+## Find Git Grep (egrep) - fgg
+##   alias to exclude certain files/directories
+## 
+fgg() {
+  find . -type f \
+  -not \( -name "*.pack" -o -name "*.idx" \) \
+  -not \( -path ./.git -prune \) \
+  -exec egrep "${@}" {} \;
+}
+
 
 ##
 ## Color 'ls' (optional)
@@ -1198,16 +1208,6 @@ convertdate_awk() {
     ' "${@}"
 }
 
-## 
-## Find Git Grep (egrep) - fgg
-##   alias to exclude certain files/directories
-## 
-fgg() {
-  find . -type f \
-  -not \( -name "*.pack" -o -name "*.idx" \) \
-  -not \( -path ./.git -prune \) \
-  -exec egrep "${@}" {} \;
-}
 
 ## 
 ## ReColumnize (recol)
@@ -1254,12 +1254,16 @@ recol() {
   }' "${@}"
 }
 
+
 ## 
 ## Sound stuff
+## 
+## Playing sound with ffplay - FFplay media player
 ## 
 splay() { 
     for i in "${@}"; do ffplay -nodisp -autoexit -loglevel quiet "${i}"; done; 
 }
+
 
 ##
 ## Zsh Options
@@ -1373,6 +1377,7 @@ if [[ $0 =~ "zsh" ]]; then
 fi
 ## END Zsh Options
 
+
 ## 
 ## Bash Options
 ## 
@@ -1405,18 +1410,18 @@ fi
 ##     shopt -s extglob
 ##     shopt -u nullglob
 ## 
-#[[ $0 =~ "bash" ]] && HISTFILE="$E_HOME/.bash_history"
 if [[ $0 =~ "bash" ]]; then 
-    bind -m emacs             # emacs key bindings in bash
-    HISTFILE="$E_HOME/.bash_history"
-## Bash Completion
-##   https://sourabhbajaj.com/mac-setup/BashCompletion/
-##   https://serverfault.com/questions/506612/standard-place-for-user-defined-bash-completion-d-scripts
-##   https://serverfault.com/questions/506612/standard-place-for-user-defined-bash-completion-d-scripts/1013395#1013395
-##   https://github.com/scop/bash-completion/blob/master/README.md
-##   
-##     "$(find "${E_HOME}"/homebrew -name 'bash_completion.d' 2>/dev/null)"
-## 
+    ## emacs key bindings in bash (ctrl-a, ctrl-e, ctrl-u, ctrl-k, etc.)
+    bind -m emacs
+    HISTFILE="${E_HOME}/.bash_history"
+    ## Bash Completion
+    ##   https://sourabhbajaj.com/mac-setup/BashCompletion/
+    ##   https://serverfault.com/questions/506612/standard-place-for-user-defined-bash-completion-d-scripts
+    ##   https://serverfault.com/questions/506612/standard-place-for-user-defined-bash-completion-d-scripts/1013395#1013395
+    ##   https://github.com/scop/bash-completion/blob/master/README.md
+    ##   
+    ##     "$(find "${E_HOME}"/homebrew -name 'bash_completion.d' 2>/dev/null)"
+    ## 
     printf "INFO: Looking for bash completion configurations\n"
     ## printf "DEBUG: Determining possible bash completion ancestor dirs\n"
     possible_bc_ancestor_dirs=()
@@ -1588,6 +1593,9 @@ aar () {
 ## Manually start a window manager if booting Linux to a console
 ##   Purposefully not indented to avoid breaking `showfuncs`
 ## 
+## Start X in the background, disown the process, 
+## and exit, so the parent tty can't be hijacked
+##
 if [[ $(which startx >/dev/null 2>&1) ]]; then
 gox() { 
     startx &
