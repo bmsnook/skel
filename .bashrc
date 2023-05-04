@@ -233,6 +233,7 @@ TPD="${HOME}/bin"                               && pathadd "${TPD}"
 TPD="${E_HOME}/.local/bin"                      && pathadd "${TPD}"
 TPD="${E_HOME}/bin"                             && pathadd "${TPD}"
 TPD="${E_HOME}/scripts"                         && pathadd "${TPD}"
+TPD="/Applications/SQLDeveloper.app/Contents/MacOS" && pathadd "${TPD}"
 # Add RVM to the PATH last for Ruby scripting
 TPD="${HOME}/.rvm/bin"                          && pathadd "${TPD}"
 export PATH
@@ -1548,9 +1549,22 @@ goar1()  { export AWS_DEFAULT_REGION='us-east-1'; }
 goar2()  { export AWS_DEFAULT_REGION='us-east-2'; }
 goap1()  { export AWS_PROFILE='first'; }
 goap2()  { export AWS_PROFILE='default'; }
+## 
+## Web Browser extension "SAML to AWS STS Keys Conversion" saves credentials
+##   Generates file with AWS STS Keys after logging in to AWS webconsole 
+##   using SSO (SAML 2.0).  It leverages 'assumeRoleWithSAML' API.
+## 
+## https://github.com/prolane/samltoawsstskeys
+## https://chrome.google.com/webstore/detail/saml-to-aws-sts-keys-conv/ekniobabpcnfjgfbphhcolcinmnbehde
+## https://addons.mozilla.org/en-US/firefox/addon/saml-to-aws-sts-keys/
+## 
+## Copy "credentials" file to a particular name under $HOME/.aws
+cpaprod(){ cp -p "${E_HOME}"/Downloads/credentials "${E_HOME}"/.aws/credentials.prod; }
+cpanpe() { cp -p "${E_HOME}"/Downloads/credentials "${E_HOME}"/.aws/credentials.non-prod; }
+## Use a particular "credentials" file under $HOME/.aws
 goaprod(){ export AWS_SHARED_CREDENTIALS_FILE="${E_HOME}/.aws/credentials.prod"; }
 goanpe() { export AWS_SHARED_CREDENTIALS_FILE="${E_HOME}/.aws/credentials.non-prod"; }
-
+## 
 
 aws_env() {
     if [[ $# -eq 1 ]]; then
@@ -1629,6 +1643,9 @@ aar () {
     unset account_id DURATION TARGET_ARN;
 }
 
+## Other utilities: kubernetes, helm, etc.
+alias kc="kubectl"
+
 
 ## 
 ## Linux
@@ -1692,7 +1709,6 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     ##     (for adding to shell resource file)
     ## 
     show_brew_env() {
-#        if [[ "${1}" == "-a" ]] && [[ ${#} -ge 1 ]] ; then
         BREW_APP="$(find \
             /opt/homebrew \
             /usr/local/Cellar \
@@ -1701,7 +1717,7 @@ if [[ `uname -s` =~ "Darwin" ]]; then
             "${HOME}/homebrew" \
             -maxdepth 2 -type f -name brew 2>/dev/null | tail -1
         )"
-        if [[ "${1}" == "-a" ]] && [[ ${#} -ge 1 ]] ; then
+        if [[ "${1}" == "-a" ]]; then
             if [[ -n "${BREW_APP}" ]]; then
                 printf "%s\n" "${BREW_APP}"
                 return 0
@@ -1735,17 +1751,78 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     ## Build our own to take advantage of functions guaranteeing unique paths
     ## 
     BREW_APP="$(show_brew_env -a)"
+    #HOMEBREW_PREFIX="${BREW_APP%/bin/brew}";
     if [[ -n "${BREW_APP}" ]]; then
-        HOMEBREW_PREFIX="${BREW_APP%/bin/brew}";
-        HOMEBREW_CELLAR="${HOMEBREW_PREFIX}/Cellar";
-        HOMEBREW_REPOSITORY="${HOMEBREW_PREFIX}";
-        pathadd_left "${HOMEBREW_PREFIX}/sbin"
-        pathadd_left "${HOMEBREW_PREFIX}/bin"
-        manpathadd_left "${HOMEBREW_PREFIX}/share/man"
-        HOMEBREW_INFO="${HOMEBREW_PREFIX}/share/info"
-        if [[ -d "${HOMEBREW_INFO}" ]] && [[ ":${INFOPATH}:" != *":${HOMEBREW_INFO}:"* ]]; then
-            INFOPATH="${HOMEBREW_INFO}${INFOPATH:+:${INFOPATH}}"
-        fi
+        BREW_HOME="$(dirname "${BREW_APP}")"
+        while [[ ! -d "${BREW_HOME}"/Cellar && "${BREW_HOME}" != "/" ]]; do
+            BREW_HOME="$(dirname "${BREW_HOME}")"
+        done
+        if [[ "${BREW_HOME}" != "/" ]]; then
+            HOMEBREW_PREFIX="${BREW_HOME}"
+            HOMEBREW_CELLAR="${HOMEBREW_PREFIX}/Cellar";
+            HOMEBREW_REPOSITORY="${HOMEBREW_PREFIX}";
+            pathadd_left "${HOMEBREW_PREFIX}/sbin"
+            pathadd_left "${HOMEBREW_PREFIX}/bin"
+            manpathadd_left "${HOMEBREW_PREFIX}/share/man"
+            HOMEBREW_INFO="${HOMEBREW_PREFIX}/share/info"
+            if [[ -d "${HOMEBREW_INFO}" ]] && [[ ":${INFOPATH}:" != *":${HOMEBREW_INFO}:"* ]]; then
+                INFOPATH="${HOMEBREW_INFO}${INFOPATH:+:${INFOPATH}}"
+            fi
+            if [[ $0 =~ "bash" ]]; then
+                if [[ -r "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh" ]]
+                then
+                    source "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh"
+                else
+                    for COMPLETION in "${HOMEBREW_PREFIX}/etc/bash_completion.d/"*
+                    do
+                        [[ -r "${COMPLETION}" ]] && source "${COMPLETION}"
+                    done
+                fi
+            fi
+            ## Ruby
+            ##   Ruby Managers
+            ##     RVM
+            ##       https://rvm.io/rvm/install
+            ##     rbenv
+            ##       brew install rbenv
+            ##       rbenv install -l
+            ##       rbenv install 3.2.2
+            ##     chruby and ruby-install
+            ##       brew install chruby ruby-install
+            ## 
+            ## Ruby - RVM
+            ##   Initialize RVM if present
+            if [[   -s "${E_HOME}/.rvm/scripts/rvm" && -z "${__HOME_RVM_LOADED}" ]]; then
+                source "${E_HOME}/.rvm/scripts/rvm" && __HOME_RVM_LOADED="true"
+            fi
+            ## Ruby - rbenv
+            ##   Initialize rbenv if present
+            if which rbenv > /dev/null; then
+                pathadd_left "${HOME}/.rbenv/shims"
+                export PATH
+                eval "$(rbenv init - | grep -v 'PATH=')"
+            fi
+            ## 
+            ## Ruby - chruby
+            ##   Initialize chruby if present
+            [[   -s  "${HOMEBREW_PREFIX}/opt/chruby/share/chruby/chruby.sh" ]] && \
+              source "${HOMEBREW_PREFIX}/opt/chruby/share/chruby/chruby.sh"
+            ##   Enable auto-switching of Rubies specified by .ruby-version files
+            [[   -s  "${HOMEBREW_PREFIX}/opt/chruby/share/chruby/auto.sh" ]] && \
+              source "${HOMEBREW_PREFIX}/opt/chruby/share/chruby/auto.sh"
+            ## 
+            ## Gems
+            ##     gem list --local
+            ##     gem install --user-install iStats      ## iStats reports CPU temp
+            ## 
+            LOCAL_GEM_DIR="${E_HOME}/.gem/ruby"
+            if [[ -d "${LOCAL_GEM_DIR}" ]]; then
+                for each_ruby_version_bin in \
+                    $(find "${LOCAL_GEM_DIR}" -maxdepth 2 -type d -name bin); do
+                    pathadd_right "${each_ruby_version_bin}"
+                done
+            fi
+        fi  ## END check if HOMEBREW_PREFIX can be set
     fi
     export HOMEBREW_PREFIX HOMEBREW_CELLAR HOMEBREW_REPOSITORY PATH MANPATH INFOPATH
 
@@ -2001,7 +2078,7 @@ if command -v jenv &>/dev/null; then
     export PATH
     eval "$(jenv init - | grep -v 'PATH=')"
 
-	printf "\nINFO: 'jenv' is installed to manage multiple Java versions\n"
+    printf "\nINFO: 'jenv' is installed to manage multiple Java versions\n"
     printf "INFO: use function 'refresh_jenv' to check for new versions\n"
     if [[ $(jenv versions | wc -l) -gt 1 ]]; then
         printf "INFO: jenv configured with multiple Java versions\n"
@@ -2015,37 +2092,41 @@ if command -v jenv &>/dev/null; then
     fi
 fi
 refresh_jenv() {
-    printf "INFO: Checking for Java/JDK versions to manage with jenv (%s)\n" $(command -v jenv)
-    #for i in /Library/Java/JavaVirtualMachines/*/Contents/Home; do 
-    #for i in $(ls -d /Library/Java/JavaVirtualMachines/*/Contents/Home 2>/dev/null); do 
-    for found_system_java_version in \
-        $( find /Library/Java/JavaVirtualMachines -name Home -exec readlink -f {} \; | sort -u )
-    do
-        printf "DEBUG: trying: jenv add \"%s\"\n" "${found_system_java_version}"
-        jenv add "${found_system_java_version}"
-    done    >/dev/null  2>&1
+    if command -v jenv &>/dev/null; then
+        printf "INFO: Checking for Java/JDK versions to manage with jenv (%s)\n" $(command -v jenv)
+        #for i in /Library/Java/JavaVirtualMachines/*/Contents/Home; do 
+        #for i in $(ls -d /Library/Java/JavaVirtualMachines/*/Contents/Home 2>/dev/null); do 
+        for found_system_java_version in \
+            $( find /Library/Java/JavaVirtualMachines -name Home -exec readlink -f {} \; | sort -u )
+        do
+            printf "DEBUG: trying: jenv add \"%s\"\n" "${found_system_java_version}"
+            jenv add "${found_system_java_version}"
+        done    >/dev/null  2>&1
 
-    homebrew_paths=()
-    homebrew_paths=( $( for each_possible_hb_path in \
-        "/opt/homebrew" \
-        "/usr/local/Cellar" \
-        "/usr/local/homebrew" \
-        "${HOMEBREW_PREFIX}" \
-        "${HOME}/homebrew" \
-        "${BREW_HOME}"
-    do
-        if [[ -d "${each_possible_hb_path}" ]]; then
-            echo "${each_possible_hb_path}"
-        fi
-    done | xargs readlink -f | sort -u ) )
+        homebrew_paths=()
+        homebrew_paths=( $( for each_possible_hb_path in \
+            "/opt/homebrew" \
+            "/usr/local/Cellar" \
+            "/usr/local/homebrew" \
+            "${HOMEBREW_PREFIX}" \
+            "${HOME}/homebrew" \
+            "${BREW_HOME}"
+        do
+            if [[ -d "${each_possible_hb_path}" ]]; then
+                echo "${each_possible_hb_path}"
+            fi
+        done | xargs readlink -f | sort -u ) )
 
-    for found_homebrew_java_version in \
-        $(find $(find "${homebrew_paths[@]}" \
-            -maxdepth 1 \( -name '*jdk*' -o -name '*jre*' -o -name '*java*' \) ) \
-            -type d -name libexec -exec dirname {} \; | xargs readlink -f | sort -u)
-    do
-        jenv add "${found_homebrew_java_version}"
-    done    >/dev/null  2>&1
+        for found_homebrew_java_version in \
+            $(find $(find "${homebrew_paths[@]}" \
+                -maxdepth 1 \( -name '*jdk*' -o -name '*jre*' -o -name '*java*' \) ) \
+                -type d -name libexec -exec dirname {} \; | xargs readlink -f | sort -u)
+        do
+            jenv add "${found_homebrew_java_version}"
+        done    >/dev/null  2>&1
+    else
+        printf "ERROR: jenv is not installed. Please install and retry.\n" >&2
+    fi
 }
 
 ## If jenv is not present, check default JAVA location for MacOS
@@ -2075,11 +2156,24 @@ if [[ ${JAVA_HOME:+x} ]]; then
 fi
 
 
-## OTHER Configurations
+## Ruby
+## 
+## Ruby rvm ruby gems - related tools and utilities
+## 
+##     gem list --local
 ## 
 ## RVM - load Ruby Version Manager into the shell session as a function
 ## 
-[[ -s "${E_HOME}/.rvm/scripts/rvm" ]] && source "${E_HOME}/.rvm/scripts/rvm"
+if [[   -s "${E_HOME}/.rvm/scripts/rvm" && -z "${__HOME_RVM_LOADED}" ]]; then
+    source "${E_HOME}/.rvm/scripts/rvm" && __HOME_RVM_LOADED="true"
+fi
+## 
+
+
+## 
+## OTHER Configurations
+## 
+
 
 
 ## PRIVATE Configurations
