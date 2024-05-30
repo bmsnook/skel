@@ -18,6 +18,11 @@
 # Update: 2023-03-16 (add: show function for MacOS)
 # Update: 2023-04-27 (add: jenv configurations)
 # Update: 2023-04-28 (add: homebrew configs; improved jenv configs)
+# Update: 2023-07-05 (add: hawk)
+# Update: 2023-12-04 (add: b2i)
+# Update: 2023-12-08 (update: removed redundancy: cppfd invokes pfd)
+# Update: 2024-02-16 (update: hawk logic; show function for MacOS arguments)
+# Update: 2024-05-30 (add: dka/kka to delete/kill ssh-key agents)
 # 
 
 # Example shell startup provided to get started
@@ -47,9 +52,13 @@
 ## 
 E_HOME="${HOME}"
 case "$(uname -n)" in
-    ip-10*)
-        E_HOME="${HOME}/tmp.bsnook"
-        cde() { cd "${E_HOME}"; }
+    ## Set a User-Specific Home (sub-)Directory per-host if needed
+    ip-10-119*)
+        USHD="tmp.bsnook"
+        if [[ -d "${HOME}/${USHD}" ]]; then
+            E_HOME="${HOME}/${USHD}"
+            cde() { cd "${E_HOME}"; }
+        fi
         ;;
     *)
         E_HOME="${HOME}" ;;
@@ -167,6 +176,9 @@ UALP="$HOME/AppData/Local/Programs"
 ## Instead of just clobbering our PATH with directories that may 
 ## not be appropriate for this server, try to be intelligent about what we add
 ## First, tidy up the extant PATH to remove any duplicates
+## 
+## NOTE: zsh "typeset -U path" will remove redundant PATH entries 
+##   but does not verify directories actually exist
 ##
 OLDPATH="${PATH}"
 NEWPATH=
@@ -230,10 +242,12 @@ TPD="${HOME}/local/bin"                         && pathadd "${TPD}"
 TPD="${HOME}/local"                             && pathadd "${TPD}"
 TPD="${HOME}/.local/bin"                        && pathadd "${TPD}"
 TPD="${HOME}/bin"                               && pathadd "${TPD}"
+TPD="${HOME}/google-cloud-sdk/bin"              && pathadd "${TPD}"
 TPD="${E_HOME}/.local/bin"                      && pathadd "${TPD}"
 TPD="${E_HOME}/bin"                             && pathadd "${TPD}"
 TPD="${E_HOME}/scripts"                         && pathadd "${TPD}"
 TPD="/Applications/SQLDeveloper.app/Contents/MacOS" && pathadd "${TPD}"
+TPD="${E_HOME}/.docker/bin"                     && pathadd "${TPD}"
 # Add RVM to the PATH last for Ruby scripting
 TPD="${HOME}/.rvm/bin"                          && pathadd "${TPD}"
 export PATH
@@ -424,6 +438,18 @@ mka() {
     ssh-agent -s > "${E_HOME}"/.agent && \
     source "${E_HOME}"/.agent && \
     ssh-add; 
+}
+rka() {
+    source "${E_HOME}"/.agent;
+}
+## Remove ("delete" or "kill") agent (accommodate both for choice/memory)
+dka() {
+    ssh-agent -k
+    rm ${E_HOME}/.agent 2>/dev/null
+}
+kka() {
+    ssh-agent -k
+    rm ${E_HOME}/.agent 2>/dev/null
 }
 
 ## 
@@ -651,6 +677,8 @@ showfunc() {
 }
 
 
+## TODO
+##   FIX THIS: most of this file should only be run for interactive shells
 if [[ is_interactive_shell ]]; then
     echo "INFO: \"showfuncs\" lists functions from \"${SHELL_STARTUP_FPATH}\""
 fi
@@ -853,17 +881,33 @@ countu() {
       }' | sort -n 
 }
 
+## 
+## Convert a binary string to an integer string
+## 
+b2i() { 
+    conv_b2i() { ${AWK} '{l=split($1,b,"");for (i=1;i<=l;i++){d=(2*d)+b[i]};print d;d=0}' ; }
+    ( [[ -f "$1" ]] && conv_b2i < "$1" ) || \
+    ( [[ $# -gt 0 ]] && echo "$@" | conv_b2i ) || \
+    conv_b2i
+}
+
 ## Return the length of the longest line in a file/stream
 len0() { ${AWK} 'length()>max{max=length()}END{print max}' $1; }
 len2() { 
     [[ -f "$1" ]] && ${AWK} 'length()>max{max=length()}END{print max}' "$1" ||\
         echo "$1" | ${AWK} 'length()>max{max=length()}END{print max}'
 }
-len() { 
+len3() { 
     [[ -f "$1" ]] && ${AWK} 'length()>max{max=length()}END{print max}' "$1" || \
     ( [[ $# -gt 0 ]] && echo "$@" | 
         ${AWK} 'length()>max{max=length()}END{print max}' ) || \
     ${AWK} 'length()>max{max=length()}END{print max}';
+}
+len() { 
+    get_len() { ${AWK} 'length()>max{max=length()}END{print max}' ; }
+    ( [[ -f "$1" ]] && get_len < "$1" ) || \
+    ( [[ $# -gt 0 ]] && echo "$@" | get_len ) || \
+    get_len; 
 }
 
 ## Merge every other line (merge odd line and following even line)
@@ -872,6 +916,36 @@ m2l() {
     ( [[ $# -gt 0 ]] && echo "$@" | 
         ${AWK} 'NR%2{printf $0" "; if(getline){print}else{print ""}}' ) || \
     ${AWK} 'NR%2{printf $0" "; if(getline){print}else{print ""}}';
+}
+
+## "Header" awk -- print the header line and lines matching the specified pattern
+hawk() {
+    ( [[ $# -gt 1 ]] && \
+        ( PATT="$1" && shift && ( \
+            for each_arg in "$@"; do
+                if [[ -f "${each_arg}" ]]; then
+                    #echo "DEBUG: Arg \"${each_arg}\" is a file"
+                    ${AWK} -v PATT="${PATT}" 'NR == 1 || $0 ~ PATT' "${each_arg}"
+                else
+                    2> printf "WARN: Argument \"${each_arg}\" is NOT a file; skipping\n"
+                fi
+                #echo
+            done
+            )
+        ) 
+    ) || \
+    ( [[ $# -eq 1 ]] && \
+        ( 2> printf "INFO: No files passed: scanning stdin for pattern \"$1\"\n";
+            PATT="$1" && ${AWK} -v PATT="${PATT}" 'NR == 1 || $0 ~ PATT' ) 
+    ) || \
+    ( printf "You did not enter enough arguments: "
+        printf "  Found %s argument but need: \n" "$#"
+        printf "    1 argument: pattern and piped input\n"
+        printf "      cat FILE | ${0} PATTERN\n"
+        printf "  or \n"
+        printf "    2 arguments: pattern and filename(s):\n"
+        printf "      ${0} PATTERN FILE1 [FILE2 [FILE3 […]]]\n"
+    )
 }
 
 ## 
@@ -912,8 +986,8 @@ gdiff() { git log $1 | \
         print cmd; system(cmd);close(cmd)}'; 
 }
 parse_git_branch() {
-    #git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
-    git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+    #git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+    git rev-parse --abbrev-ref HEAD 2>/dev/null | sed -e 's/\(.*\)/(\1)/'
 }
 parse_git_toplevel() {
     #basename $(git rev-parse --show-toplevel 2> /dev/null) | sed '/[^$]/s/\(.*\)/\[\1\]::/'
@@ -942,8 +1016,8 @@ fgg() {
 UNAMES=`uname -s`
 TERM=vt220
 if [[ $UNAMES = "Linux" ]]; then
-    alias ls='ls --color'
     if [[ is_interactive_shell ]]; then
+        alias ls='ls --color' && \
         echo "INFO: 'ls' == 'ls --color' -- type 'unalias ls' to disable"
     fi
 elif [[ $UNAMES = "OSF1" ]]; then
@@ -1022,21 +1096,43 @@ fi
 ## 
 ## Print a formatted date suffix
 ## 
-pfd() { date "+__%Y-%m-%d"; }
-cppfd() { 
-    # use "echo -n" or "printf" to avoid CR/LF from being copied/pasted
-    if [[ $(uname) =~ "Darwin" ]]; then
-        printf `date "+__%Y-%m-%d"` | tee $(tty) | pbcopy && echo; 
-    elif [[ $(uname) =~ "_NT" ]] || \
-        $( df -k / | egrep -o '^[A-Z]:' >/dev/null ); then 
-        MYC_TTY=$(tty) && \
-            printf `date "+__%Y-%m-%d"` | tee ${MYC_TTY} | clip && echo; 
-    elif [[ $( which xclip >/dev/null 2>&1 ) ]]; then
-        echo `date "+__%Y-%m-%d"` | tee $(tty) | xclip -selection clipboard
-    else
-        echo `date "+__%Y-%m-%d"`
-    fi;
+pfd () {
+    DATE_BASE_FMT="%Y-%m-%d"
+    DATE_TIME_FMT=""
+
+    while getopts ":tf:" arg; do
+        case "${arg}" in 
+            t)
+                DATE_TIME_FMT="_%H%M"
+                ;;
+            f)
+                DATE_TIME_FMT=""
+                DATE_BASE_FMT="${OPTARG}"
+                break
+                ;;
+        esac
+    done
+
+    date "+__${DATE_BASE_FMT}${DATE_TIME_FMT}"
 }
+
+cppfd () {
+    # check OS to use appropriate copy buffer command
+    # use "echo -n" or "printf" to avoid CR/LF from being copied/pasted
+    if [[ $(uname) =~ "Darwin" ]]
+    then
+        printf "$(pfd "${@}")" | tee $(tty) | pbcopy && echo
+    elif [[ $(uname) =~ "_NT" ]] || $( df -k / | egrep -o '^[A-Z]:' >/dev/null )
+    then
+        MYC_TTY=$(tty)  && printf "$(pfd "${@}")" | tee ${MYC_TTY} | clip && echo
+    elif [[ -n $( which xclip >/dev/null 2>&1 ) ]]
+    then
+        printf "$(pfd "${@}")" | tee $(tty) | xclip -selection clipboard
+    else
+        printf "$(pfd "${@}")\n"
+    fi
+}
+
 
 ## 
 ## Stub for date comparison function
@@ -1250,7 +1346,7 @@ recol() {
     for (line=1; line<=num_lines; line++) {
       num_line_cols = length(line_matrix[line])
       printf("%-*s", max_col_width[1], line_matrix[line][1])
-      for (col=2; col<num_line_cols; col++) {
+      for (col=2; col<=num_line_cols; col++) {
         if (line_matrix[line][col] ~ /^[+-]?[[:digit:]]+$/) {
           printf("%*s%*s", \
             NUM_PAD_SPACE, \
@@ -1562,8 +1658,33 @@ goap2()  { export AWS_PROFILE='default'; }
 cpaprod(){ cp -p "${E_HOME}"/Downloads/credentials "${E_HOME}"/.aws/credentials.prod; }
 cpanpe() { cp -p "${E_HOME}"/Downloads/credentials "${E_HOME}"/.aws/credentials.non-prod; }
 ## Use a particular "credentials" file under $HOME/.aws
-goaprod(){ export AWS_SHARED_CREDENTIALS_FILE="${E_HOME}/.aws/credentials.prod"; }
-goanpe() { export AWS_SHARED_CREDENTIALS_FILE="${E_HOME}/.aws/credentials.non-prod"; }
+## 
+##   https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
+##     aws configure list-profiles
+## 
+goaprod(){ 
+    #export AWS_PROFILE=prod
+    export AWS_SHARED_CREDENTIALS_FILE="${E_HOME}/.aws/credentials.prod"; 
+}
+goanpe() { 
+    #export AWS_PROFILE=npe
+    export AWS_SHARED_CREDENTIALS_FILE="${E_HOME}/.aws/credentials.non-prod"; 
+}
+goaprodpci(){ 
+    #export AWS_PROFILE=prod.pci
+    export AWS_SHARED_CREDENTIALS_FILE="${E_HOME}/.aws/credentials.prod.pci"; 
+}
+goanpepci() { 
+    #export AWS_PROFILE=npe.pci
+    export AWS_SHARED_CREDENTIALS_FILE="${E_HOME}/.aws/credentials.non-prod.pci"; 
+}
+show_aws_env() {
+    echo "AWS_PROFILE                  == \"$AWS_PROFILE\""
+    echo "AWS_SHARED_CREDENTIALS_FILE  == \"$AWS_SHARED_CREDENTIALS_FILE\""
+    echo "AWS_DEFAULT_REGION           == \"$AWS_DEFAULT_REGION\""
+    echo "AWS_ACCESS_KEY_ID            == \"$AWS_ACCESS_KEY_ID\""
+    echo "AWS_SECRET_ACCESS_KEY        == \"$AWS_SECRET_ACCESS_KEY\""
+}
 ## 
 
 aws_env() {
@@ -1589,6 +1710,33 @@ aws_env_tf() {
     export TF_VAR_region=$(aws configure get region --profile ${AWS_PROFILE});
     echo "${AWS_PROFILE} environment variables exported to terraform";
 }
+
+## AWS ECR list
+ael() {
+    LINE_COUNT=10
+    while getopts ":l:" arg; do
+        case "${arg}" in 
+            l)
+                LINE_COUNT="${OPTARG}"
+                shift
+                shift
+                break
+                ;;
+        esac
+    done
+    if [[ "${1}" =~ "^[A-Za-z]+" ]]; then
+        REPO="${1}"
+    else
+        echo "ERROR: please specify an ECR repository"
+        return 1
+    fi
+    printf 'DEBUG: REPO = "%s"\n' ${REPO}
+    aws ecr describe-images \
+        --repository-name "${REPO}" \
+        --query 'imageDetails[?(not_null(imageTags[0]))].[registryId,imageSizeInBytes,imagePushedAt,repositoryName,imageTags[0]]' \
+        --output text | sort -Vk5 | tail -${LINE_COUNT}
+}
+
 
 ## 
 ## Assume Account Role - assume AWS account roles
@@ -1691,6 +1839,14 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     ## Basic Installation (requires admin/sudo access)
     ##   https://brew.sh/
     ##     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    ## 
+    ##   https://docs.brew.sh/Installation
+    ##     This script installs Homebrew to its default, supported, best prefix 
+    ##          /usr/local                      for macOS Intel
+    ##          /opt/homebrew                   for Apple Silicon
+    ##          /home/linuxbrew/.linuxbrew      for Linux
+    ##     so that you don’t need sudo after Homebrew’s initial installation when you brew install.
+    ## 
     ## 
     ## Per-User Installation (shared system or no admin/sudo access)
     ## 
@@ -1826,6 +1982,9 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     fi
     export HOMEBREW_PREFIX HOMEBREW_CELLAR HOMEBREW_REPOSITORY PATH MANPATH INFOPATH
 
+    ## curl / AWS / GCP
+    [[ -f "${HOME}/.aws/nskp_config/netskope-cert-bundle.pem" ]] && \
+        export REQUESTS_CA_BUNDLE="${HOME}/.aws/nskp_config/netskope-cert-bundle.pem"
     
     ## 
     ## Functions to open Mac Apps
@@ -1963,8 +2122,28 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     ##       To modify whether this function brings the Finder to foreground 
     ##       after highlighting files, add/uncomment/comment/remove the line 
     ##       "activate" after the line "reveal FILE_array"
+    ##   CAVEAT:
+    ##       Because this uses "readlink -f" to get full paths to files,
+    ##       this will reveal the targets of symlinks in the Finder instead 
+    ##       of the symlinks themselves.
+    ##       This may or may not be what you are trying to do.
     ## 
     show() {
+        if [[ $# -ge 1 ]] && [[ "x${1}" =~ "^x-[aA]$" ]]; then
+            case "${1}" in 
+                -a)
+                    activateFinderWhenDone="true"
+                    shift
+                    ;;
+                -A)
+                    activateFinderWhenDone="false"
+                    shift
+                    ;;
+                *)
+                    activateFinderWhenDone="false"
+                    ;;
+            esac
+        fi
         if [[ $# -ge 1 ]]; then
             FILE_ARRAY=()
             while [[ $# -gt 1 ]]; do
@@ -1991,13 +2170,17 @@ if [[ `uname -s` =~ "Darwin" ]]; then
                 try
                     tell application "Finder"
                         reveal FILE_array
-            #           activate
                     end tell
                 on error
                     display dialog "Could not reveal files:\n" & FILE_array as string
                 end try
                 return "Found " & files_found_count & " files to display."
             end run'
+            if [[ "x${activateFinderWhenDone}" = "xtrue" ]]; then 
+                osascript -e   'tell application "Finder"
+                                    activate
+                                end tell'
+            fi
         fi
     }
 
@@ -2053,6 +2236,11 @@ if [[ `uname -s` =~ "Darwin" ]]; then
         [[ ! -z "${PERL_MB_OPT}" ]]            &&   export PERL_MB_OPT
         [[ ! -z "${PERL_MM_OPT}" ]]            &&   export PERL_MM_OPT
     fi
+
+    get_apple_serial() { 
+        /usr/sbin/ioreg -l | \
+            "${AWK}" '/IOPlatformSerialNumber/{gsub("\"",""); print $NF; exit}'
+    }
 fi      ## /MacOS
 ## END MacOS
 
@@ -2137,15 +2325,14 @@ refresh_jenv() {
 if [[ -n "${JAVA_HOME}" ]]; then
     TJH="$(/usr/libexec/java_home -V 2>&1 | \
         awk '/JavaVirtualMachines/{print $NF}')"
-    [ -d ${TJH} ] && JAVA_HOME=$TJH
-    [[ ${JAVA_HOME:+x} ]] && export JAVA_HOME
+    [[ -d "${TJH}" ]] && JAVA_HOME="$TJH"
 fi
 
 ## 
 ## One more check in case JAVA_HOME is not set yet
 ## 
 if [[ -z "${JAVA_HOME}" ]]; then
-    if [[ $(which java >/dev/null 2>&1) ]]; then 
+    if command -v java &>/dev/null; then
         JAVA_HOME="$(java -XshowSettings:properties -version 2>&1 | \
             sed -ne '/java\.home/ s/.*= *//p')"
     fi
@@ -2174,6 +2361,25 @@ fi
 ## OTHER Configurations
 ## 
 
+## Google / gcloud
+##   May be installed in "${HOME}" or "${HOME}/local"
+## 
+THIS_SHELL="${0//-}"
+if [[ -d "${HOME}/google-cloud-sdk" ]]; then
+    export GCLOUD_HOME="${HOME}/google-cloud-sdk"
+elif [[ -d "${HOME}/local/google-cloud-sdk" ]]; then 
+    export GCLOUD_HOME="${HOME}/local/google-cloud-sdk"
+fi
+if [[ "${THIS_SHELL}" =~ "^(bash|zsh)$" ]] && [[ -n "${GCLOUD_HOME}" ]]; then 
+    # This updates PATH for the Google Cloud SDK.
+    if [ -f "${GCLOUD_HOME}/path.${THIS_SHELL}.inc" ]; then 
+        . "${GCLOUD_HOME}/path.${THIS_SHELL}.inc"; 
+    fi
+    # This enables shell command completion for gcloud.
+    if [ -f "${GCLOUD_HOME}/completion.${THIS_SHELL}.inc" ]; then 
+        . "${GCLOUD_HOME}/completion.${THIS_SHELL}.inc"; 
+    fi
+fi
 
 
 ## PRIVATE Configurations
@@ -2183,6 +2389,7 @@ fi
 ## a separate configuration file to allow the base shell resource file 
 ## to be shared between a variety of systems.
 ## 
+[[ -f "${SHELL_STARTUP_FPATH}.home" ]] && source "${SHELL_STARTUP_FPATH}.home"
 [[ -f "${SHELL_STARTUP_FPATH}.work" ]] && source "${SHELL_STARTUP_FPATH}.work"
 
 
