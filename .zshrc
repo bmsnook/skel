@@ -696,8 +696,12 @@ awkpass() {
 ## 
 ## Query ARIN (American Registry for Internet Numbers) for whois info on IPs
 ##
-if [[ $(which whois >/dev/null 2>&1) ]]; then
-awhois() { whois -h whois.arin.net $1; }
+if [[ $( command -v whois ) ]]; then
+    awhois() { whois -h whois.arin.net ${1}; }
+    swhois() { whois ${1} | awk '
+        /^>>>/{exit}
+        /Domain (Name|ID)|WHOIS Server|Registrar:|Expir|(Updated|Creation) Date/
+    '}
 fi
 
 ##
