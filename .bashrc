@@ -700,8 +700,7 @@ if [[ $( command -v whois ) ]]; then
     awhois() { whois -h whois.arin.net ${1}; }
     swhois() { whois ${1} | awk '
         /^>>>/{exit}
-        /Domain (Name|ID)|WHOIS Server|Registrar:|Expir|(Updated|Creation) Date/
-    '}
+        /Domain (Name|ID)|WHOIS Server|Registrar:|Expir|(Updated|Creation) Date/{print}'; }
 fi
 
 ##
@@ -1595,7 +1594,7 @@ if [[ $0 =~ "bash" ]]; then
                 -o -name '.bash_completion' \
                 -o -name 'bash_completion.sh' \
                 -o -name 'bash-completion.sh' \
-            \) -type f  2>/dev/null | xargs readlink -f | sort -u) ) 
+            \) -type f  2>/dev/null | xargs readlink -f | sort -u) ) >2 /dev/null
     #printf "FOUND bash completion files:\n"
     #printf "    %s\n" "${found_bash_completion_files[@]}"
 
