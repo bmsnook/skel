@@ -23,6 +23,7 @@
 # Update: 2023-12-08 (update: removed redundancy: cppfd invokes pfd)
 # Update: 2024-02-16 (update: hawk logic; show function for MacOS arguments)
 # Update: 2024-05-30 (add: dka/kka to delete/kill ssh-key agents)
+# Update: 2024-12-04 (update: most of file now inside is_interactive_shell test)
 # 
 
 # Example shell startup provided to get started
@@ -474,17 +475,6 @@ tuny() {
 }
 
 ##
-## UMASK
-##
-### if [ `id -gn` = `id -un` -a `id -u` -gt 14 ]; then
-###         umask 002
-### else
-###         umask 022
-### fi
-##
-umask 022
-
-##
 ## Aliases
 ##
 ## Set up aliases
@@ -581,11 +571,28 @@ export USER
 
 
 ##
+## UMASK
+##
+### if [ `id -gn` = `id -un` -a `id -u` -gt 14 ]; then
+###         umask 002
+### else
+###         umask 022
+### fi
+##
+umask 022
+
+
+##
 ## FUNCTIONS (define useful utilities)
 ##
 is_interactive_shell() {
     [[ "$-" =~ "i" ]]
 }
+
+
+## Most of this file should only be run for interactive shells
+if [[ is_interactive_shell ]]; then
+    echo "INFO: \"showfuncs\" lists functions from \"${SHELL_STARTUP_FPATH}\""
 
 
 ##
@@ -676,12 +683,6 @@ showfunc() {
     ' "${SHELL_STARTUP_FPATH}"
 }
 
-
-## TODO
-##   FIX THIS: most of this file should only be run for interactive shells
-if [[ is_interactive_shell ]]; then
-    echo "INFO: \"showfuncs\" lists functions from \"${SHELL_STARTUP_FPATH}\""
-fi
 
 ## Site-specific example extracting stanza from a file with awk regex
 ## 
@@ -2385,6 +2386,14 @@ if [[ "${THIS_SHELL}" =~ "^(bash|zsh)$" ]] && [[ -n "${GCLOUD_HOME}" ]]; then
 fi
 
 
+if command -v bashcompinit &>/dev/null; then
+    autoload -U +X bashcompinit && bashcompinit
+    if [[ "x$(command -v terraform)" != "x" ]]; then
+        complete -o nospace -C /usr/local/bin/terraform terraform
+    fi
+fi
+
+
 ## PRIVATE Configurations
 ## 
 ## Import settings or functions that may contain proprietary references  
@@ -2395,4 +2404,6 @@ fi
 [[ -f "${SHELL_STARTUP_FPATH}.home" ]] && source "${SHELL_STARTUP_FPATH}.home"
 [[ -f "${SHELL_STARTUP_FPATH}.work" ]] && source "${SHELL_STARTUP_FPATH}.work"
 
+
+fi		## END of: "if [[ is_interactive_shell ]]..."
 
