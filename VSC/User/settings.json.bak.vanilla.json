@@ -1,0 +1,10 @@
+{
+    "aws.resources.enabledResources": [
+        "AWS::EC2::InternetGateway",
+        "AWS::EC2::KeyPair",
+        "AWS::EC2::RouteTable",
+        "AWS::EC2::Subnet",
+        "AWS::EC2::SubnetRouteTableAssociation",
+        "AWS::EC2::VPC"
+    ]
+}

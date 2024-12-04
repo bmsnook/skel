@@ -1,0 +1,35 @@
+{
+    // Restore some sanity and make Visual Studio a better-behaved Mac app
+    // Enables macOS Sierra window tabs. 
+    // Note that changes require a full restart to apply and that 
+    // native tabs will disable a custom title bar style if configured.
+    // 
+    "window.nativeTabs": true,
+    // Adjust the appearance of the window title bar. 
+    // On Linux and Windows, this setting also affects the application 
+    // and context menu appearances. Changes require a full restart to apply.
+    // 
+    "window.titleBarStyle": "native",
+    "security.workspace.trust.untrustedFiles": "open",
+    "terminal.integrated.env.osx": {},
+    "terminal.integrated.rightClickBehavior": "default",
+    "window.openFilesInNewWindow": "on",
+    "workbench.startupEditor": "none",
+    "git.ignoreLegacyWarning": true,
+    // Native macOS Theme - MacOS
+    // https://marketplace.visualstudio.com/items?itemName=dsoloha.native-macos
+    "workbench.colorTheme": "Visual Studio Dark",
+
+    "aws.resources.enabledResources": [
+        "AWS::EC2::InternetGateway",
+        "AWS::EC2::KeyPair",
+        "AWS::EC2::RouteTable",
+        "AWS::EC2::Subnet",
+        "AWS::EC2::SubnetRouteTableAssociation",
+        "AWS::EC2::VPC"
+    ],
+
+    "yaml.schemas": {
+        "kubernetes": "*.yaml"
+    }
+}

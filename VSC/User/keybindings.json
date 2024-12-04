@@ -1,0 +1,14 @@
+// Place your key bindings in this file to override the defaults
+[
+    // Enable (Shift-)Control-Tab to move between tabs based on 
+    //   (visible) adjacency rather than (invisible) last update time
+    // https://stackoverflow.com/a/38978993
+    {
+        "key": "ctrl+tab",
+        "command": "workbench.action.nextEditor"
+    },
+    {
+        "key": "ctrl+shift+tab",
+        "command": "workbench.action.previousEditor"
+    }
+]
