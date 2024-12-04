@@ -2385,6 +2385,14 @@ if [[ "${THIS_SHELL}" =~ "^(bash|zsh)$" ]] && [[ -n "${GCLOUD_HOME}" ]]; then
 fi
 
 
+if command -v bashcompinit &>/dev/null; then
+    autoload -U +X bashcompinit && bashcompinit
+    if [[ "x$(command -v terraform)" != "x" ]]; then
+        complete -o nospace -C /usr/local/bin/terraform terraform
+    fi
+fi
+
+
 ## PRIVATE Configurations
 ## 
 ## Import settings or functions that may contain proprietary references  
