@@ -20,6 +20,15 @@
     // https://marketplace.visualstudio.com/items?itemName=dsoloha.native-macos
     "workbench.colorTheme": "Visual Studio Dark",
 
+    // added per recommendation for AWS CloudFormation integration
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.quickSuggestions": { "other": true, "comments": false, "strings": true },
+    "editor.autoIndent": "full",
+    "editor.renderWhitespace": "all",
+    "yaml.format.enable": true,
+    "yaml.trace.server": "verbose",
+
     "aws.resources.enabledResources": [
         "AWS::EC2::InternetGateway",
         "AWS::EC2::KeyPair",
@@ -29,7 +38,29 @@
         "AWS::EC2::VPC"
     ],
 
+    "yaml.customTags": [
+        "! And",
+        "! If",
+        "! Not",
+        "! Equals",
+        "! Or",
+        "! FindInMap sequence",
+        "! Base64",
+        "! Cidr",
+        "! Ref",
+        "! Sub",
+        "! GetAtt",
+        "! GetAZs",
+        "! ImportValue",
+        "! Select",
+        "! Select sequence",
+        "! Split",
+        "! Join sequence",
+        "!Condition scalar"
+    ],
+    
     "yaml.schemas": {
         "kubernetes": "*.yaml"
-    }
+    },
+    "docker.extension.enableComposeLanguageServer": false
 }
