@@ -53,6 +53,7 @@ Thumbs.db
 # Temporary, Backup, etc.
 *~
 bin/**
+lib/**
 tmp/**
 tmp/**/*
 output
@@ -79,6 +80,7 @@ __pycache__/
 ## 
 venv
 .venv
+pyvenv.cfg
 
 # Compiled C++ files
 *.out
@@ -101,6 +103,7 @@ venv
 # .tfstate files
 *.tfstate
 *.tfstate.*
+*.tfvars
 
 ## VS Code
 ##   https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
