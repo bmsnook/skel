@@ -24,6 +24,7 @@
 # Update: 2024-02-16 (update: hawk logic; show function for MacOS arguments)
 # Update: 2024-05-30 (add: dka/kka to delete/kill ssh-key agents)
 # Update: 2024-12-04 (update: most of file now inside is_interactive_shell test)
+# Update: 2025-03-17 (add: ctus to convert to underscores without lowering case)
 # 
 
 # Example shell startup provided to get started
@@ -229,7 +230,7 @@ TPD="/Applications/Visual Studio Code.app/Contents/Resources/app/bin" \
 TPD="${HOME}"/Library/Python/3.8/bin            && pathadd "${TPD}"
 TPD=/usr/local/opt/qt@5/bin                     && pathadd "${TPD}"
 TPD=/usr/local/Cellar/qt@5/5.15.3/bin           && pathadd "${TPD}"
-TPD=/usr/local/go/bin                           && pathadd "${TPD}"
+#TPD=/usr/local/go/bin                           && pathadd "${TPD}"
 TPD="/c/OpenSSH-Win64"                          && pathadd "${TPD}"
 TPD="${CWINDOWS}"                               && pathadd "${TPD}"
 TPD="${WPF}"/Git/bin                            && pathadd "${TPD}"
@@ -1162,14 +1163,42 @@ compdate ()
 ## 
 ## Text Processing
 ## 
+## convert to underscores
+ctus() { 
+    echo "${@}" | sed -e 's/[$.]/_/g' -e 's/\\/_/g' -e "s/'//g" | \
+        awk '{
+            gsub(" *& *"," and ");
+            gsub("[][)({} :,;!?/|]","_");
+            gsub("#","_");
+            gsub("…","__");
+            gsub("___{1,}","__");
+            gsub("[^_]_$",substr($0,length($0)-1,1));
+            gsub("^_[^_].*",substr($0,2));
+            printf ($0)
+        }'
+}
 looppre() { 
     PREFIX="${1}";
     while true; 
         do read x && echo -n "${PREFIX}__$(mlc ${x//[\"\']/})__" ; 
     done; 
 }
+## make lowercase
+    ## use this line if also converting periods
+    ## echo "${@}" | sed -e 's/[$.]/_/g' -e 's/\\/_/g' -e "s/'//g" | \
 mlc() { 
-    echo "${@}" | sed -e 's/[$.]/_/g' -e 's/\\/_/g' -e "s/'//g" | \
+    echo "${@}" | sed -e 's/[$]/_/g' -e 's/\\/_/g' -e "s/'//g" | \
+        awk '{
+            gsub(" *& *"," and ");
+            gsub("[][)({} :,;!?/|]","_");
+            gsub("___{1,}","__");
+            gsub("[^_]_$",substr($0,length($0)-1,1));
+            gsub("^_[^_].*",substr($0,2));
+            printf tolower($0)
+        }'
+}
+mlcp() { 
+    echo "${@}" | sed -e 's/[$]/_/g' -e 's/\\/_/g' -e "s/'//g" | \
         awk '{
             gsub(" *& *"," and ");
             gsub("[][)({} :,;!?/|]","_");
@@ -1179,11 +1208,21 @@ mlc() {
             printf tolower($0)
         }' | tee $(tty) | pbcopy && echo;
 }
+## loop maker lowercase (and "begin"/"end" alts to prefix/postfix other strings)
 lmlc() { while true; do read answer; mlc "${answer//[\"\']/}"; done; }
+lmlcp() { while true; do read answer; mlcp "${answer//[\"\']/}"; done; }
 mlb()  { mlc "${@//[\"\']/}__" ; }
 lmlb() { while true; do read answer; mlc "${answer//[\"\']/}__" ; done; }
+lmlcpb() { while true; do read answer; mlcp "${answer//[\"\']/}__" ; done; }
 mle()  { mlc "__${@//[\"\']/}" ; }
 lmle() { while true; do read answer; mlc "__${answer//[\"\']/}" ; done; }
+lmlcpe() { while true; do read answer; mlcp "__${answer//[\"\']/}" ; done; }
+## loop convert to underscores (and "begin"/"end" alts to prefix/postfix other strings)
+lctus() { while true; do read answer; mlc "${answer//[\"\']/}"; done; }
+ctusb()  { mlc "${@//[\"\']/}__" ; }
+lctusb() { while true; do read answer; mlc "${answer//[\"\']/}__" ; done; }
+ctuse()  { mlc "__${@//[\"\']/}" ; }
+lctuse() { while true; do read answer; mlc "__${answer//[\"\']/}" ; done; }
 ## sbs - strip backslashes from text (file or string)
 sbs() { 
     [[ -f "$1" ]] && sed -e 's/\\//g' "$1" || echo "$1" | sed -e 's/\\//g';
@@ -1488,6 +1527,9 @@ if [[ $0 =~ "zsh" ]]; then
     watch=(all)
     NULLCMD=cat
     READNULLCMD=less
+    if [[ -d "$E_HOME/.local/share/zsh/site-functions" ]]; then
+        fpath=("$E_HOME/.local/share/zsh/site-functions" $fpath)
+    fi
     autoload -U compinit && compinit
     if [[ -d "${E_HOME}/myfunctions" ]]; then
         fpath+=("${E_HOME}/myfunctions")
