@@ -1489,6 +1489,12 @@ if [[ $0 =~ "zsh" ]]; then
     NULLCMD=cat
     READNULLCMD=less
     autoload -U compinit && compinit
+    if [[ -d "${E_HOME}/myfunctions" ]]; then
+        fpath+=("${E_HOME}/myfunctions")
+        for function_file in "${E_HOME}/myfunctions"/*; do
+            autoload -Uz "${function_file##*/}"
+        done
+    fi
     setopt ALLEXPORT
     setopt APPEND_HISTORY
     setopt AUTO_CD
@@ -1612,6 +1618,12 @@ if [[ $0 =~ "bash" ]]; then
         #echo source "${BC_FILE}"
         source "${BC_FILE}"
     done
+
+    if [[ -d "${E_HOME}/myfunctions" ]]; then
+        for function_file in "${E_HOME}/myfunctions"/*; do
+            source "${function_file}" && export -f "${function_file##*/}"
+        done
+    fi
 fi
 ## END Bash Options
 
@@ -2099,6 +2111,12 @@ if [[ `uname -s` =~ "Darwin" ]]; then
         )
     fi
 
+    ## gocu - Go Chrome URL(s)
+    ## Define function to open URL(s) in Google Chrome
+    ##   Pass options to modify behavior:
+    ##      new or existing window, incognito mode, prefix to add to all URLs)
+    source ${HOME}/scripts/gocu.sh
+
     ## 
     ## cdf - Change Directory to Finder window path
     ##       Credit: https://superuser.com/a/1044651
@@ -2248,6 +2266,11 @@ if [[ `uname -s` =~ "Darwin" ]]; then
 fi      ## /MacOS
 ## END MacOS
 
+
+## 
+## Docker
+## 
+dps() { docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"; }
 
 ## 
 ## JAVA stuff, in case we use it
@@ -2405,5 +2428,5 @@ fi
 [[ -f "${SHELL_STARTUP_FPATH}.work" ]] && source "${SHELL_STARTUP_FPATH}.work"
 
 
-fi		## END of: "if [[ is_interactive_shell ]]..."
+fi      ## END of: "if [[ is_interactive_shell ]]..."
 
