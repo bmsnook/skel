@@ -24,6 +24,7 @@
 # Update: 2024-02-16 (update: hawk logic; show function for MacOS arguments)
 # Update: 2024-05-30 (add: dka/kka to delete/kill ssh-key agents)
 # Update: 2024-12-04 (update: most of file now inside is_interactive_shell test)
+# Update: 2025-03-17 (add: ctus to convert to underscores without lowering case)
 # 
 
 # Example shell startup provided to get started
@@ -229,7 +230,7 @@ TPD="/Applications/Visual Studio Code.app/Contents/Resources/app/bin" \
 TPD="${HOME}"/Library/Python/3.8/bin            && pathadd "${TPD}"
 TPD=/usr/local/opt/qt@5/bin                     && pathadd "${TPD}"
 TPD=/usr/local/Cellar/qt@5/5.15.3/bin           && pathadd "${TPD}"
-TPD=/usr/local/go/bin                           && pathadd "${TPD}"
+#TPD=/usr/local/go/bin                           && pathadd "${TPD}"
 TPD="/c/OpenSSH-Win64"                          && pathadd "${TPD}"
 TPD="${CWINDOWS}"                               && pathadd "${TPD}"
 TPD="${WPF}"/Git/bin                            && pathadd "${TPD}"
@@ -1162,14 +1163,42 @@ compdate ()
 ## 
 ## Text Processing
 ## 
+## convert to underscores
+ctus() { 
+    echo "${@}" | sed -e 's/[$.]/_/g' -e 's/\\/_/g' -e "s/'//g" | \
+        awk '{
+            gsub(" *& *"," and ");
+            gsub("[][)({} :,;!?/|]","_");
+            gsub("#","_");
+            gsub("…","__");
+            gsub("___{1,}","__");
+            gsub("[^_]_$",substr($0,length($0)-1,1));
+            gsub("^_[^_].*",substr($0,2));
+            printf ($0)
+        }'
+}
 looppre() { 
     PREFIX="${1}";
     while true; 
         do read x && echo -n "${PREFIX}__$(mlc ${x//[\"\']/})__" ; 
     done; 
 }
+## make lowercase
+    ## use this line if also converting periods
+    ## echo "${@}" | sed -e 's/[$.]/_/g' -e 's/\\/_/g' -e "s/'//g" | \
 mlc() { 
-    echo "${@}" | sed -e 's/[$.]/_/g' -e 's/\\/_/g' -e "s/'//g" | \
+    echo "${@}" | sed -e 's/[$]/_/g' -e 's/\\/_/g' -e "s/'//g" | \
+        awk '{
+            gsub(" *& *"," and ");
+            gsub("[][)({} :,;!?/|]","_");
+            gsub("___{1,}","__");
+            gsub("[^_]_$",substr($0,length($0)-1,1));
+            gsub("^_[^_].*",substr($0,2));
+            printf tolower($0)
+        }'
+}
+mlcp() { 
+    echo "${@}" | sed -e 's/[$]/_/g' -e 's/\\/_/g' -e "s/'//g" | \
         awk '{
             gsub(" *& *"," and ");
             gsub("[][)({} :,;!?/|]","_");
@@ -1179,11 +1208,21 @@ mlc() {
             printf tolower($0)
         }' | tee $(tty) | pbcopy && echo;
 }
+## loop maker lowercase (and "begin"/"end" alts to prefix/postfix other strings)
 lmlc() { while true; do read answer; mlc "${answer//[\"\']/}"; done; }
+lmlcp() { while true; do read answer; mlcp "${answer//[\"\']/}"; done; }
 mlb()  { mlc "${@//[\"\']/}__" ; }
 lmlb() { while true; do read answer; mlc "${answer//[\"\']/}__" ; done; }
+lmlcpb() { while true; do read answer; mlcp "${answer//[\"\']/}__" ; done; }
 mle()  { mlc "__${@//[\"\']/}" ; }
 lmle() { while true; do read answer; mlc "__${answer//[\"\']/}" ; done; }
+lmlcpe() { while true; do read answer; mlcp "__${answer//[\"\']/}" ; done; }
+## loop convert to underscores (and "begin"/"end" alts to prefix/postfix other strings)
+lctus() { while true; do read answer; mlc "${answer//[\"\']/}"; done; }
+ctusb()  { mlc "${@//[\"\']/}__" ; }
+lctusb() { while true; do read answer; mlc "${answer//[\"\']/}__" ; done; }
+ctuse()  { mlc "__${@//[\"\']/}" ; }
+lctuse() { while true; do read answer; mlc "__${answer//[\"\']/}" ; done; }
 ## sbs - strip backslashes from text (file or string)
 sbs() { 
     [[ -f "$1" ]] && sed -e 's/\\//g' "$1" || echo "$1" | sed -e 's/\\//g';
@@ -1488,13 +1527,10 @@ if [[ $0 =~ "zsh" ]]; then
     watch=(all)
     NULLCMD=cat
     READNULLCMD=less
-    autoload -U compinit && compinit
-    if [[ -d "${E_HOME}/myfunctions" ]]; then
-        fpath+=("${E_HOME}/myfunctions")
-        for function_file in "${E_HOME}/myfunctions"/*; do
-            autoload -Uz "${function_file##*/}"
-        done
+    if [[ -d "$E_HOME/.local/share/zsh/site-functions" ]]; then
+        fpath=("$E_HOME/.local/share/zsh/site-functions" $fpath)
     fi
+    autoload -U compinit && compinit
     setopt ALLEXPORT
     setopt APPEND_HISTORY
     setopt AUTO_CD
@@ -1618,12 +1654,6 @@ if [[ $0 =~ "bash" ]]; then
         #echo source "${BC_FILE}"
         source "${BC_FILE}"
     done
-
-    if [[ -d "${E_HOME}/myfunctions" ]]; then
-        for function_file in "${E_HOME}/myfunctions"/*; do
-            source "${function_file}" && export -f "${function_file##*/}"
-        done
-    fi
 fi
 ## END Bash Options
 
@@ -2111,12 +2141,6 @@ if [[ `uname -s` =~ "Darwin" ]]; then
         )
     fi
 
-    ## gocu - Go Chrome URL(s)
-    ## Define function to open URL(s) in Google Chrome
-    ##   Pass options to modify behavior:
-    ##      new or existing window, incognito mode, prefix to add to all URLs)
-    source ${HOME}/scripts/gocu.sh
-
     ## 
     ## cdf - Change Directory to Finder window path
     ##       Credit: https://superuser.com/a/1044651
@@ -2266,11 +2290,6 @@ if [[ `uname -s` =~ "Darwin" ]]; then
 fi      ## /MacOS
 ## END MacOS
 
-
-## 
-## Docker
-## 
-dps() { docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"; }
 
 ## 
 ## JAVA stuff, in case we use it
@@ -2428,5 +2447,5 @@ fi
 [[ -f "${SHELL_STARTUP_FPATH}.work" ]] && source "${SHELL_STARTUP_FPATH}.work"
 
 
-fi      ## END of: "if [[ is_interactive_shell ]]..."
+fi		## END of: "if [[ is_interactive_shell ]]..."
 
