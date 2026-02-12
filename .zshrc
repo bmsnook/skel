@@ -163,6 +163,21 @@ pathadd_left() {
     PATH="$1${PATH:+:$PATH}"
   fi
 }
+## Prepend directory to PATH; if already in PATH, move it to the front.
+pathmove_left() {
+  if [[ ! -d "$1" ]]; then
+    return
+  fi
+  if [[ ":$PATH:" != *":$1:"* ]]; then
+    PATH="$1${PATH:+:$PATH}"
+  else
+    PATH=":$PATH:"
+    PATH="${PATH//:$1:/:}"
+    PATH="${PATH#:}"
+    PATH="${PATH%:}"
+    PATH="$1${PATH:+:$PATH}"
+  fi
+}
 
 ## 
 ## PATH - Windows PATH prefixes (e.g., for git bash)
@@ -1975,8 +1990,13 @@ if [[ `uname -s` =~ "Darwin" ]]; then
             HOMEBREW_PREFIX="${BREW_HOME}"
             HOMEBREW_CELLAR="${HOMEBREW_PREFIX}/Cellar";
             HOMEBREW_REPOSITORY="${HOMEBREW_PREFIX}";
-            pathadd_left "${HOMEBREW_PREFIX}/sbin"
-            pathadd_left "${HOMEBREW_PREFIX}/bin"
+            ## PATH may already have /opt/homebrew/sbin and /opt/homebrew/bin
+            ## Some environments (corp, school, etc.) add defaults to PATH
+            ##   For instance, /etc/zprofile may call /usr/libexec/path_helper
+            ##   which reads /etc/paths and /etc/paths.d/*
+            ## Move them to the front of PATH so that python3, etc. use Homebrew.
+            pathmove_left "${HOMEBREW_PREFIX}/sbin"
+            pathmove_left "${HOMEBREW_PREFIX}/bin"
             manpathadd_left "${HOMEBREW_PREFIX}/share/man"
             HOMEBREW_INFO="${HOMEBREW_PREFIX}/share/info"
             if [[ -d "${HOMEBREW_INFO}" ]] && [[ ":${INFOPATH}:" != *":${HOMEBREW_INFO}:"* ]]; then
