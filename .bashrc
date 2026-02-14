@@ -1539,7 +1539,9 @@ if [[ $0 =~ "zsh" ]]; then
     HISTFILE="$E_HOME/.zsh_history"
     LOGCHECK=10
     WATCHFMT="%B%n%b has %a from %m"
-    watch=(all)
+    ## See when all users or all except your own user (all %n) login
+    # watch=(all)
+    watch=(all %n)
     NULLCMD=cat
     READNULLCMD=less
     if [[ -d "$E_HOME/.local/share/zsh/site-functions" ]]; then
