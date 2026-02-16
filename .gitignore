@@ -30,36 +30,92 @@ Thumbs.db
 ## MacOS
 ##   https://www.toptal.com/developers/gitignore/api/macos
 ## 
+# Created by https://www.toptal.com/developers/gitignore/api/macos
+# Edit at https://www.toptal.com/developers/gitignore?templates=macos
+
+### macOS ###
+# General
 .DS_Store
-*.swp
-*.backup
-# Files that might appear on external disks
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
 .Spotlight-V100
+.TemporaryItems
 .Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+### macOS Patch ###
+# iCloud generated files
+*.icloud
+
+# End of https://www.toptal.com/developers/gitignore/api/macos
+
 
 ## Windows
 ##   https://github.com/github/gitignore/blob/main/Global/Windows.gitignore
 ## 
-*.bat
+# Created by https://www.toptal.com/developers/gitignore/api/windows
+# Edit at https://www.toptal.com/developers/gitignore?templates=windows
+
+### Windows ###
+# Windows thumbnail cache files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+
+# Dump file
+*.stackdump
+
+# Folder config file
+[Dd]esktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
 # Windows Installer files
 *.cab
 *.msi
 *.msix
 *.msm
 *.msp
+
 # Windows shortcuts
 *.lnk
 
+# End of https://www.toptal.com/developers/gitignore/api/windows
+
+
 # Temporary, Backup, etc.
 *~
+*.swp
+*.backup
+*.tmp
+*.bak
+*.old
 bin/**
 lib/**
 tmp/**
 tmp/**/*
 output
-*.tmp
-*.bak
-*.old
 log/
 app/
 
@@ -75,12 +131,35 @@ __pycache__/
 ## Distribution / packaging
 .Python
 ## 
+
 ## VirtualEnv
 ##   https://github.com/github/gitignore/blob/main/Global/VirtualEnv.gitignore
 ## 
-venv
-.venv
+# https://realpython.com/python-virtual-environments-a-primer/#the-virtualenv-project
+.Python
+[Bb]in
+[Ii]nclude
+[Ll]ib
+[Ll]ib64
+[Ll]ocal
+[Ss]cripts
 pyvenv.cfg
+.venv
+pip-selfcheck.json
+
+## Environments
+##   NOTE: .env is also used by Docker to pass environment variables to containers
+##     Especially when passing sensitive values (i.e., MYSQL_PASSWORD):
+##     - add .env to .gitignore (avoid posting to Git version control),
+##     - add .env to .dockerignore (avoid sharing to public images on Docker Hub)
+.env
+.envrc
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
 # Compiled C++ files
 *.out
