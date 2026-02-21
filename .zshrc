@@ -2180,7 +2180,7 @@ if [[ `uname -s` =~ "Darwin" ]]; then
     ## Define function to open URL(s) in Google Chrome
     ##   Pass options to modify behavior:
     ##      new or existing window, incognito mode, prefix to add to all URLs)
-    source ${HOME}/scripts/gocu.sh
+    [[ -f ${HOME}/scripts/gocu.sh ]] && source ${HOME}/scripts/gocu.sh
 
     ## 
     ## cdf - Change Directory to Finder window path
